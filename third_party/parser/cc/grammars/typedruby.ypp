@@ -192,6 +192,7 @@ using namespace std::string_literals;
 ;
 
 %printer { yyo << $$->string(); } tIDENTIFIER
+%printer { yyo << $$->string(); } tCONSTANT
 
 %type <node>
   arg
@@ -1596,6 +1597,10 @@ int yylex(parser::semantic_type *lval, ruby_parser::typedruby27 &driver) {
                 | primary_value tCOLON2 tCONSTANT
                     {
                       $$ = driver.build.constFetch(self, $1, $2, $3);
+                    }
+                | primary_value tCOLON2 error
+                    {
+                      $$ = driver.build.constFetchError(self, $1, $2);
                     }
                 | tCOLON3 tCONSTANT
                     {
