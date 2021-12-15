@@ -1,4 +1,5 @@
 #include "packager/rbi_gen.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_replace.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "common/FileOps.h"
@@ -546,6 +547,9 @@ private:
                             if (field.data(gs)->isField()) {
                                 emit(field);
                             } else {
+                                if (absl::StartsWith(field.data(gs)->name.show(gs), "@@")) {
+                                    emit(field, true);
+                                }
                                 maybeEmit(field);
                             }
                             break;
@@ -618,7 +622,7 @@ private:
             out.println("end");
         }
     }
-    void emit(core::FieldRef field) {
+    void emit(core::FieldRef field, bool isCVar = false) {
         // cerr << "Emitting " << field.show(gs) << "\n";
         if (field.data(gs)->isStaticField()) {
             const auto &resultType = field.data(gs)->resultType;
@@ -631,7 +635,11 @@ private:
                     return;
                 }
             }
-            out.println("{} = {}", field.show(gs), typeDeclaration(resultType));
+            if (isCVar) {
+                out.println("{} = {}", field.data(gs)->name.show(gs), typeDeclaration(resultType));
+            } else {
+                out.println("{} = {}", field.show(gs), typeDeclaration(resultType));
+            }
         } else {
             out.println("{} = {}", field.data(gs)->name.show(gs), typeDeclaration(field.data(gs)->resultType));
         }
