@@ -1,0 +1,97 @@
+# test/testdata/packager/rbi_gen/RBIGen_Package.rbi
+# typed: true
+
+module RBIGen::Public
+end
+class RBIGen::Public::SealedClass < Object
+  sealed!
+  extend T::Helpers
+end
+class RBIGen::Public::RefersToPrivateTypes < Object
+  sig {params(a: RBIGen::Private::PrivateClass).void}
+  def method(a); end
+  extend T::Sig
+end
+class RBIGen::Private::PrivateClass < Object
+end
+class RBIGen::Public::MyStruct < T::Struct
+  sig {returns(T.nilable(String))}
+  def bar; end
+  sig {returns(Integer)}
+  def extra_method; end
+  sig {returns(Integer)}
+  def foo; end
+  sig {params(foo: Integer).returns(Integer)}
+  def foo=(foo); end
+  sig {returns(Float)}
+  def quz; end
+  extend T::Sig
+end
+class RBIGen::Public::MyEnum < T::Enum
+  abstract!
+  sealed!
+  sig {returns(String)}
+  def to_string; end
+  extend T::Sig
+  extend T::Helpers
+  enums do
+    Clubs = new
+    Diamonds = new
+    Hearts = new
+    Spades = new
+  end
+end
+module RBIGen::Public::InterfaceModule
+  abstract!
+  interface!
+  sig {abstract.returns(String)}
+  def interface_method; end
+  extend T::Sig
+  extend T::Helpers
+end
+class RBIGen::Public::FinalClass < Object
+  final!
+  sig(:final) {void}
+  def final_method; end
+  extend T::Sig
+  extend T::Helpers
+end
+class RBIGen::Public::FieldCheck < Object
+  @@static_field = T.let(T.unsafe(nil), Integer)
+  sig {void}
+  def initialize
+    @field = T.let(T.unsafe(nil), Integer)
+  end
+  extend T::Sig
+  @statically_declared_field = T.let(T.unsafe(nil), Integer)
+end
+RBIGen::Public::FieldCheck::Constant = T.let(T.unsafe(nil), Integer)
+RBIGen::Public::FieldCheck::AliasConstant = T.let(T.unsafe(nil), T.class_of(RBIGen::Public::FieldCheck))
+RBIGen::Public::FieldCheck::Alias = RBIGen::Public::FieldCheck
+class RBIGen::Public::AbstractClass < Object
+  abstract!
+  sig {abstract.returns(String)}
+  def abstract_method; end
+  extend T::Sig
+  extend T::Helpers
+end
+class RBIGen::Public::AbstractAndInterfaceImplementor < RBIGen::Public::AbstractClass
+  include RBIGen::Public::InterfaceModule
+  sig {override.returns(String)}
+  def abstract_method; end
+  sig {override.returns(String)}
+  def interface_method; end
+end
+
+# test/testdata/packager/rbi_gen/RBIGen_Package.test.rbi
+# typed: true
+
+class RBIGen::Private::PrivateClassForTests < Object
+end
+module Test::RBIGen
+end
+class Test::RBIGen::MyTestHelper < Object
+end
+class Test::RBIGen::MyTest < Object
+end
+
