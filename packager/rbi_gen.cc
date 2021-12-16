@@ -465,12 +465,33 @@ private:
         {
             Indent indent(out);
 
+            if (klass.data(gs)->isClassOrModuleAbstract()) {
+                out.println("abstract!");
+            }
+
+            if (klass.data(gs)->isClassOrModuleFinal()) {
+                out.println("final!");
+            }
+
+            if (klass.data(gs)->isClassOrModuleInterface()) {
+                out.println("interface!");
+            }
+
+            if (klass.data(gs)->isClassOrModuleSealed()) {
+                out.println("sealed!");
+            }
+
             // Mixins (include/extend)
             for (auto mixin : klass.data(gs)->mixins()) {
                 auto isSingleton = mixin.data(gs)->isSingletonClass(gs);
                 auto keyword = isSingleton ? "extend"sv : "include"sv;
                 out.println("{} {}", keyword, mixin.show(gs));
                 maybeEmit(mixin);
+            }
+
+            // Type members
+            for (auto typeMember : klass.data(gs)->typeMembers()) {
+                emit(typeMember);
             }
 
             // Members
@@ -494,7 +515,7 @@ private:
                         break;
                     }
                     case core::SymbolRef::Kind::TypeMember: {
-                        emit(member.asTypeMemberRef());
+                        // Ignore; already emitted above.
                         break;
                     }
                     case core::SymbolRef::Kind::TypeArgument: {
@@ -537,6 +558,11 @@ private:
                     maybeEmit(mixin);
                 }
 
+                // Type templates
+                for (auto typeMember : singleton.data(gs)->typeMembers()) {
+                    emit(typeMember);
+                }
+
                 for (auto &[name, member] : singleton.data(gs)->membersStableOrderSlow(gs)) {
                     if (shouldSkipMember(name)) {
                         continue;
@@ -548,7 +574,7 @@ private:
                             break;
                         }
                         case core::SymbolRef::Kind::TypeMember: {
-                            emit(member.asTypeMemberRef());
+                            // Ignore; already emitted above.
                             break;
                         }
                         case core::SymbolRef::Kind::TypeArgument: {
