@@ -146,7 +146,10 @@ string AliasType::toStringWithTabs(const GlobalState &gs, int tabs) const {
 }
 
 string AliasType::show(const GlobalState &gs) const {
-    return fmt::format("<Alias: {} >", this->symbol.showFullName(gs));
+    // RBI generation: show() is supposed to print what the user typed, and the user doesn't
+    // type <Alias: SymbolName>!
+    return this->symbol.show(gs);
+    // return fmt::format("<Alias: {} >", this->symbol.showFullName(gs));
 }
 
 string AndType::toStringWithTabs(const GlobalState &gs, int tabs) const {
