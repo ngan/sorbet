@@ -502,7 +502,11 @@ private:
                         if (field.data(gs)->isField()) {
                             pendingFields.emplace_back(field);
                         } else {
-                            maybeEmit(field);
+                            if (absl::StartsWith(field.data(gs)->name.show(gs), "@@")) {
+                                emit(field, true);
+                            } else {
+                                maybeEmit(field);
+                            }
                         }
                         break;
                     }
@@ -549,8 +553,9 @@ private:
                             } else {
                                 if (absl::StartsWith(field.data(gs)->name.show(gs), "@@")) {
                                     emit(field, true);
+                                } else {
+                                    maybeEmit(field);
                                 }
-                                maybeEmit(field);
                             }
                             break;
                         }
