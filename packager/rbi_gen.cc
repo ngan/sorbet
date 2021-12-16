@@ -103,13 +103,17 @@ constexpr int MAX_PRETTY_SIG_ARGS = 4;
 constexpr int MAX_PRETTY_WIDTH = 80;
 
 core::SymbolRef lookupFQN(const core::GlobalState &gs, const vector<core::NameRef> &fqn) {
-    core::ClassOrModuleRef scope = core::Symbols::root();
+    core::SymbolRef scope = core::Symbols::root();
     for (auto name : fqn) {
-        auto result = scope.data(gs)->findMember(gs, name);
-        if (!result.exists()) {
+        if (scope.isClassOrModule()) {
+            auto result = scope.asClassOrModuleRef().data(gs)->findMember(gs, name);
+            if (!result.exists()) {
+                return core::Symbols::noClassOrModule();
+            }
+            scope = result;
+        } else {
             return core::Symbols::noClassOrModule();
         }
-        scope = result.asClassOrModuleRef();
     }
     return scope;
 }
@@ -119,6 +123,7 @@ private:
     const core::GlobalState &gs;
     const core::packages::PackageInfo &pkg;
     const core::ClassOrModuleRef pkgNamespace;
+    const core::ClassOrModuleRef pkgTestNamespace;
     const UnorderedSet<core::ClassOrModuleRef> &pkgNamespaces;
     UnorderedSet<core::SymbolRef> emittedSymbols;
     vector<core::SymbolRef> toEmit;
@@ -400,11 +405,29 @@ private:
         }
     }
 
-    bool isInPackage(core::SymbolRef klass) {
+    bool isInTestPackage(core::SymbolRef klass) {
         if (klass == core::Symbols::root() || klass == core::Symbols::PackageRegistry()) {
             return false;
         }
         if (klass == pkgNamespace) {
+            return false;
+        }
+        if (klass == pkgTestNamespace) {
+            return true;
+        }
+        if (klass.isClassOrModule()) {
+            if (pkgNamespaces.contains(klass.asClassOrModuleRef())) {
+                return false;
+            }
+        }
+        return isInTestPackage(klass.owner(gs));
+    }
+
+    bool isInPackage(core::SymbolRef klass) {
+        if (klass == core::Symbols::root() || klass == core::Symbols::PackageRegistry()) {
+            return false;
+        }
+        if (klass == pkgNamespace || klass == pkgTestNamespace) {
             return true;
         }
         if (klass.isClassOrModule()) {
@@ -755,60 +778,80 @@ private:
         }
     }
 
+    static core::ClassOrModuleRef getPkgTestNamespace(const core::GlobalState &gs,
+                                                      const core::packages::PackageInfo &pkg) {
+        vector<core::NameRef> fullName = pkg.fullName();
+        fullName.insert(fullName.begin(), core::Names::Constants::Test());
+        return lookupFQN(gs, fullName).asClassOrModuleRef();
+    }
+
 public:
     RBIExporter(const core::GlobalState &gs, const core::packages::PackageInfo &pkg,
                 const UnorderedSet<core::ClassOrModuleRef> &pkgNamespaces)
         : gs(gs), pkg(pkg), pkgNamespace(lookupFQN(gs, pkg.fullName()).asClassOrModuleRef()),
-          pkgNamespaces(pkgNamespaces) {}
+          pkgTestNamespace(getPkgTestNamespace(gs, pkg)), pkgNamespaces(pkgNamespaces) {}
 
-    void emit(string outputDir) {
-        auto exports = pkg.exports();
-        if (!exports.empty()) {
-            for (auto &e : pkg.exports()) {
-                auto exportSymbol = lookupFQN(gs, e);
-                if (exportSymbol.exists()) {
-                    maybeEmit(exportSymbol);
+    RBIGenerator::RBIOutput emit() {
+        RBIGenerator::RBIOutput output;
+        output.baseFilePath = pkg.mangledName().show(gs);
+
+        auto rawExports = pkg.exports();
+        auto rawTestExports = pkg.testExports();
+
+        vector<core::SymbolRef> exports;
+        vector<core::SymbolRef> testExports;
+
+        for (auto &e : rawExports) {
+            auto exportSymbol = lookupFQN(gs, e);
+            if (exportSymbol.exists()) {
+                if (isInTestPackage(exportSymbol)) {
+                    // Test:: symbol.
+                    testExports.emplace_back(exportSymbol);
                 } else {
-                    Exception::raise("Invalid package export");
+                    exports.emplace_back(exportSymbol);
                 }
             }
-
-            emitLoop();
-
-            auto outputFile = absl::StrCat(outputDir, "/", pkg.mangledName().show(gs), ".rbi");
-            // cerr << outputFile << "\n";
-            FileOps::write(outputFile, "# typed: true\n\n" + out.toString());
         }
 
-        auto testExports = pkg.testExports();
-        if (!testExports.empty()) {
-            for (auto &e : testExports) {
-                auto exportSymbol = lookupFQN(gs, e);
-                if (exportSymbol.exists()) {
-                    maybeEmit(exportSymbol);
-                } else {
-                    Exception::raise("Invalid package export");
-                }
+        for (auto e : rawTestExports) {
+            auto exportSymbol = lookupFQN(gs, e);
+            if (exportSymbol.exists()) {
+                testExports.emplace_back(exportSymbol);
+            }
+        }
+
+        if (!exports.empty()) {
+            for (auto &exportSymbol : exports) {
+                maybeEmit(exportSymbol);
             }
 
             emitLoop();
 
-            auto testOutputFile = absl::StrCat(outputDir, "/", pkg.mangledName().show(gs), ".test.rbi");
+            output.rbi = "# typed: true\n\n" + out.toString();
+        }
+
+        if (!testExports.empty()) {
+            for (auto exportSymbol : testExports) {
+                maybeEmit(exportSymbol);
+            }
+
+            emitLoop();
+
             auto rbiText = out.toString();
             if (!rbiText.empty()) {
-                // cerr << testOutputFile << "\n";
-                FileOps::write(testOutputFile, "# typed: true\n\n" + rbiText);
+                output.testRBI = "# typed: true\n\n" + rbiText;
             }
         }
+
+        return output;
     }
 };
 } // namespace
 
-void RBIGenerator::run(core::GlobalState &gs, vector<ast::ParsedFile> packageFiles, string outputDir,
-                       WorkerPool &workers) {
-    absl::BlockingCounter threadBarrier(std::max(workers.size(), 1));
+UnorderedSet<core::ClassOrModuleRef>
+RBIGenerator::buildPackageNamespace(core::GlobalState &gs, vector<ast::ParsedFile> &packageFiles, WorkerPool &workers) {
     // Populate package database.
-    Packager::findPackages(gs, workers, move(packageFiles));
+    packageFiles = Packager::findPackages(gs, workers, move(packageFiles));
 
     const auto &packageDB = gs.packageDB();
 
@@ -816,14 +859,46 @@ void RBIGenerator::run(core::GlobalState &gs, vector<ast::ParsedFile> packageFil
     if (packages.empty()) {
         Exception::raise("No packages found?");
     }
-    auto inputq = make_shared<ConcurrentBoundedQueue<core::NameRef>>(packages.size());
+
+    auto testNamespace = core::Names::Constants::Test();
 
     UnorderedSet<core::ClassOrModuleRef> packageNamespaces;
     for (auto package : packages) {
         auto &pkg = gs.packageDB().getPackageInfo(package);
-        auto packageNamespace = lookupFQN(gs, pkg.fullName());
-        ENFORCE(packageNamespace.exists());
-        packageNamespaces.insert(packageNamespace.asClassOrModuleRef());
+        vector<core::NameRef> fullName = pkg.fullName();
+        auto packageNamespace = lookupFQN(gs, fullName);
+        // Might not exist if package has no files.
+        if (packageNamespace.exists()) {
+            packageNamespaces.insert(packageNamespace.asClassOrModuleRef());
+        }
+
+        fullName.insert(fullName.begin(), testNamespace);
+        auto testPackageNamespace = lookupFQN(gs, fullName);
+        if (testPackageNamespace.exists()) {
+            packageNamespaces.insert(testPackageNamespace.asClassOrModuleRef());
+        }
+    }
+
+    return packageNamespaces;
+}
+
+RBIGenerator::RBIOutput RBIGenerator::runOnce(const core::GlobalState &gs, core::NameRef pkgName,
+                                              const UnorderedSet<core::ClassOrModuleRef> &packageNamespaces) {
+    auto &pkg = gs.packageDB().getPackageInfo(pkgName);
+    ENFORCE(pkg.exists());
+    RBIExporter exporter(gs, pkg, packageNamespaces);
+    return exporter.emit();
+}
+
+void RBIGenerator::run(core::GlobalState &gs, vector<ast::ParsedFile> packageFiles, string outputDir,
+                       WorkerPool &workers) {
+    absl::BlockingCounter threadBarrier(std::max(workers.size(), 1));
+    UnorderedSet<core::ClassOrModuleRef> packageNamespaces = buildPackageNamespace(gs, packageFiles, workers);
+
+    const auto &packageDB = gs.packageDB();
+    auto &packages = packageDB.packages();
+    auto inputq = make_shared<ConcurrentBoundedQueue<core::NameRef>>(packages.size());
+    for (auto package : packages) {
         inputq->push(move(package), 1);
     }
 
@@ -832,10 +907,14 @@ void RBIGenerator::run(core::GlobalState &gs, vector<ast::ParsedFile> packageFil
         core::NameRef job;
         for (auto result = inputq->try_pop(job); !result.done(); result = inputq->try_pop(job)) {
             if (result.gotItem()) {
-                auto &pkg = rogs.packageDB().getPackageInfo(job);
-                ENFORCE(pkg.exists());
-                RBIExporter exporter(rogs, pkg, packageNamespaces);
-                exporter.emit(outputDir);
+                auto output = runOnce(rogs, job, packageNamespaces);
+                if (!output.rbi.empty()) {
+                    FileOps::write(absl::StrCat(outputDir, "/", output.baseFilePath, ".rbi"), output.rbi);
+                }
+
+                if (!output.testRBI.empty()) {
+                    FileOps::write(absl::StrCat(outputDir, "/", output.baseFilePath, ".test.rbi"), output.testRBI);
+                }
             }
         }
         threadBarrier.DecrementCount();

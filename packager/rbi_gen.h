@@ -9,6 +9,18 @@ namespace sorbet::packager {
  */
 class RBIGenerator final {
 public:
+    struct RBIOutput {
+        std::string baseFilePath;
+        std::string rbi;
+        std::string testRBI;
+    };
+
+    // Exposed for testing.
+    static UnorderedSet<core::ClassOrModuleRef>
+    buildPackageNamespace(core::GlobalState &gs, std::vector<ast::ParsedFile> &packageFiles, WorkerPool &workers);
+    static RBIOutput runOnce(const core::GlobalState &gs, core::NameRef pkg,
+                             const UnorderedSet<core::ClassOrModuleRef> &packageNamespaces);
+
     static void run(core::GlobalState &gs, std::vector<ast::ParsedFile> packageFiles, std::string outputDir,
                     WorkerPool &workers);
 };
