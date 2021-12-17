@@ -149,6 +149,9 @@ module RBIGen::Public
     private def my_method(a); end
 
     sig {void}
+    private_class_method def self.kls_method; end
+
+    sig {void}
     module_function def sample_mod_fcn; end
   end
 end

@@ -234,7 +234,11 @@ private:
 
         string visibility = "";
         if (methodData->flags.isPrivate) {
-            visibility = "private ";
+            if (methodData->owner.data(gs)->isSingletonClass(gs)) {
+                visibility = "private_class_method ";
+            } else {
+                visibility = "private ";
+            }
         } else if (methodData->flags.isProtected) {
             visibility = "protected ";
         }

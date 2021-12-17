@@ -10,6 +10,8 @@ module RBIGen::Public::VariousMethods
   private def sample_mod_fcn; end
   extend T::Sig
   sig {void}
+  private_class_method def self.kls_method; end
+  sig {void}
   def self.sample_mod_fcn; end
 end
 class RBIGen::Private::PrivateClassPulledInByPrivateMethod < Object
