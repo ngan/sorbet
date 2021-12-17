@@ -153,6 +153,8 @@ module RBIGen::Public
 
     sig {void}
     module_function def sample_mod_fcn; end
+
+    def dotdotdot(...); end # error: This function does not have a `sig`
   end
 
   module DefDelegator

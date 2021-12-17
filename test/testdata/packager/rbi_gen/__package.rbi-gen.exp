@@ -4,6 +4,7 @@
 module RBIGen::Public
 end
 module RBIGen::Public::VariousMethods
+  def dotdotdot(...); end
   sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
   private def my_method(a); end
   sig {void}

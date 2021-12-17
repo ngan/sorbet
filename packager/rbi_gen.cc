@@ -305,8 +305,16 @@ private:
             if (argSym.isSyntheticBlockArgument()) {
                 continue;
             }
+
             string prefix = "";
             string suffix = "";
+            auto argName = argSym.argumentName(gs);
+            if (argName == "...") {
+                prettyArgs.emplace_back(argName);
+                // The remaining arguments are synthetic (<fwd-arg>, etc).
+                break;
+            }
+
             if (argSym.flags.isRepeated) {
                 if (argSym.flags.isKeyword) {
                     prefix = "**"; // variadic keyword args
@@ -324,7 +332,8 @@ private:
             } else if (argSym.flags.isDefault) {
                 suffix = "= T.let(T.unsafe(nil), T.untyped)";
             }
-            prettyArgs.emplace_back(fmt::format("{}{}{}", prefix, argSym.argumentName(gs), suffix));
+
+            prettyArgs.emplace_back(fmt::format("{}{}{}", prefix, argName, suffix));
         }
 
         string argListPrefix = "";
