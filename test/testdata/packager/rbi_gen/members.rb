@@ -4,6 +4,7 @@ module RBIGen::Private
   class PrivateClass; end
   class PrivateClassPulledInByClassAlias; end
   class PrivateClassPulledInByTypeTemplate; end
+  class PrivateClassPulledInByPrivateMethod; end
 
   class PrivateClassNotReferenced; end
 
@@ -141,6 +142,13 @@ module RBIGen::Public
     B = type_member(:out)
   end
 
-  # type_template invariant, in, out
-  # Aliases that pull in private classes
+  module VariousMethods
+    extend T::Sig
+
+    sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
+    private def my_method(a); end
+
+    sig {void}
+    module_function def sample_mod_fcn; end
+  end
 end

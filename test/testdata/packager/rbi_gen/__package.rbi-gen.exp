@@ -3,6 +3,17 @@
 
 module RBIGen::Public
 end
+module RBIGen::Public::VariousMethods
+  sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
+  private def my_method(a); end
+  sig {void}
+  private def sample_mod_fcn; end
+  extend T::Sig
+  sig {void}
+  def self.sample_mod_fcn; end
+end
+class RBIGen::Private::PrivateClassPulledInByPrivateMethod < Object
+end
 class RBIGen::Public::SealedClass < Object
   sealed!
   extend T::Helpers

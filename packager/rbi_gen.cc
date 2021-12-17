@@ -726,10 +726,8 @@ private:
         }
         emittedSymbols.insert(method);
 
-        if (method.data(gs)->flags.isPrivate) {
-            // Private methods will never be called outside of a package.
-            return;
-        }
+        // Note: We have to emit private methods because `include`ing a module with private methods will make those
+        // methods available.
 
         if (absl::StartsWith(method.data(gs)->name.shortName(gs), "<")) {
             // Sorbet-internal method (e.g., a test method).
