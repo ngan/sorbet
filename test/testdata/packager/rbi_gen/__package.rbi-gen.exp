@@ -71,7 +71,7 @@ RBIGen::Public::FieldCheck::Alias = RBIGen::Public::FieldCheck
 class RBIGen::Public::AliasMethod < Object
   sig {params(other: BasicObject).returns(T::Boolean)}
   def ==(other); end
-  sig {params(other: BasicObject).returns(RBIGen::Public::AliasMethod#==)}
+  sig {params(other: BasicObject).returns(T::Boolean)}
   def eql?(other); end
   extend T::Sig
 end

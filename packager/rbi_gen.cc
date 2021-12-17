@@ -679,8 +679,9 @@ private:
         }
 
         if (method.data(gs)->hasSig()) {
-            out.println(prettySigForMethod(gs, method.data(gs)->dealiasMethod(gs), nullptr, method.data(gs)->resultType,
-                                           nullptr));
+            auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
+            out.println(
+                prettySigForMethod(gs, dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
         }
         out.println(prettyDefForMethod(gs, method) + "; end");
     }
@@ -697,8 +698,9 @@ private:
                 return;
             }
             if (method.data(gs)->hasSig()) {
-                out.println(prettySigForMethod(gs, method.data(gs)->dealiasMethod(gs), nullptr,
-                                               method.data(gs)->resultType, nullptr));
+                auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
+                out.println(
+                    prettySigForMethod(gs, dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
             }
             methodDef = prettyDefForMethod(gs, method);
         } else {
