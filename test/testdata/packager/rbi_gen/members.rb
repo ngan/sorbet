@@ -171,4 +171,12 @@ module RBIGen::Public
   end
 
   MaybeString = T.type_alias {T.nilable(String)}
+  
+  class AttachedClassType
+    extend T::Sig
+
+    sig {params(a: T.proc.params(arg: T.attached_class).void).void}
+    def self.method(a)
+    end
+  end
 end
