@@ -461,6 +461,54 @@ private:
                name == core::Names::attached();
     }
 
+    void emitProp(core::NameRef name, const core::TypePtr &type, bool isConst, bool hasDefault) {
+        string_view propType = isConst ? "const"sv : "prop"sv;
+        out.println("{} :{}, {}{}", propType, name.show(gs), type.show(gs),
+                    hasDefault ? absl::StrCat(", default: T.let(T.unsafe(nil), ", type.show(gs), ")") : "");
+    }
+
+    void emitStructProps(core::MethodRef structInitializer, vector<core::MethodRef> methods,
+                         vector<core::FieldRef> fields) {
+        for (auto &arg : structInitializer.data(gs)->arguments) {
+            if (arg.isSyntheticBlockArgument() || !arg.flags.isKeyword) {
+                continue;
+            }
+            bool hasDefault = arg.flags.isDefault;
+            bool isConst = true;
+            auto name = arg.name;
+            auto equalName = name.lookupWithEq(gs);
+            auto fieldName = name.lookupWithAt(gs);
+
+            // Remove methods with the given name or `name=`.
+            // This isn't very efficient but YOLO.
+            methods.erase(remove_if(methods.begin(), methods.end(),
+                                    [name, equalName, &gs = this->gs, &isConst](core::MethodRef method) {
+                                        auto methodName = method.data(gs)->name;
+                                        if (methodName == equalName) {
+                                            isConst = false;
+                                            return true;
+                                        }
+                                        return methodName == name;
+                                    }),
+                          methods.end());
+            fields.erase(remove_if(fields.begin(), fields.end(),
+                                   [&gs = this->gs, fieldName](core::FieldRef field) {
+                                       return field.data(gs)->name == fieldName;
+                                   }),
+                         fields.end());
+            emitProp(name, arg.type, isConst, hasDefault);
+        }
+
+        // Emit the rest of the methods.
+        for (auto method : methods) {
+            emit(method);
+        }
+
+        for (auto field : fields) {
+            emit(field);
+        }
+    }
+
     void emit(core::ClassOrModuleRef klass) {
         if (!isInPackage(klass) || !emittedSymbols.contains(klass)) {
             // We don't emit class definitions for items defined in other packages.
@@ -478,6 +526,7 @@ private:
         }
 
         const bool isEnum = klass.data(gs)->superClass() == core::Symbols::T_Enum();
+        const bool isStruct = klass.data(gs)->superClass() == core::Symbols::T_Struct();
 
         // cerr << "Emitting " << klass.show(gs) << "\n";
         // Class definition line
@@ -529,6 +578,7 @@ private:
             core::MethodRef initializeMethod;
             vector<core::FieldRef> pendingFields;
             vector<core::ClassOrModuleRef> pendingEnumValues;
+            vector<core::MethodRef> pendingMethods; // For T::Struct.
             for (auto &[name, member] : klass.data(gs)->membersStableOrderSlow(gs)) {
                 if (shouldSkipMember(name)) {
                     continue;
@@ -557,6 +607,8 @@ private:
                         if (name == core::Names::initialize()) {
                             // Defer outputting until we gather fields.
                             initializeMethod = member.asMethodRef();
+                        } else if (isStruct) {
+                            pendingMethods.emplace_back(member.asMethodRef());
                         } else {
                             emit(member.asMethodRef());
                         }
@@ -578,7 +630,11 @@ private:
                 }
             }
 
-            maybeEmitInitialized(initializeMethod, pendingFields);
+            if (isStruct) {
+                emitStructProps(initializeMethod, move(pendingMethods), move(pendingFields));
+            } else {
+                maybeEmitInitialized(initializeMethod, pendingFields);
+            }
             pendingFields.clear();
 
             auto singleton = klass.data(gs)->lookupSingletonClass(gs);

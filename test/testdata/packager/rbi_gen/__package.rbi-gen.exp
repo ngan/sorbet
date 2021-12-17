@@ -15,17 +15,13 @@ end
 class RBIGen::Private::PrivateClass < Object
 end
 class RBIGen::Public::MyStruct < T::Struct
-  sig {returns(T.nilable(String))}
-  def bar; end
+  prop :foo, Integer
+  const :bar, T.nilable(String), default: T.let(T.unsafe(nil), T.nilable(String))
+  const :quz, Float, default: T.let(T.unsafe(nil), Float)
   sig {returns(Integer)}
   def extra_method; end
-  sig {returns(Integer)}
-  def foo; end
-  sig {params(foo: Integer).returns(Integer)}
-  def foo=(foo); end
-  sig {returns(Float)}
-  def quz; end
   extend T::Sig
+  @field = T.let(T.unsafe(nil), Integer)
 end
 class RBIGen::Public::MyEnum < T::Enum
   abstract!

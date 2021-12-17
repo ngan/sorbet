@@ -86,6 +86,8 @@ module RBIGen::Public
     const :bar, T.nilable(String)
     const :quz, Float, default: 0.5
 
+    @field = T.let(10, Integer)
+
     sig {returns(Integer)}
     def extra_method
       10
