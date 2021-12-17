@@ -2,6 +2,8 @@
 
 module RBIGen::Private
   class PrivateClass; end
+  class PrivateClassPulledInByClassAlias; end
+  class PrivateClassPulledInByTypeTemplate; end
 
   class PrivateClassNotReferenced; end
 
@@ -15,6 +17,8 @@ module RBIGen::Public
     sig {params(a: RBIGen::Private::PrivateClass).void}
     def method(a)
     end
+
+    ClassAlias = RBIGen::Private::PrivateClassPulledInByClassAlias
   end
 
   class FinalClass
@@ -121,4 +125,22 @@ module RBIGen::Public
       false
     end
   end
+
+  class ClassWithTypeParams
+    extend T::Generic
+    
+    A = type_template(fixed: RBIGen::Private::PrivateClassPulledInByTypeTemplate)
+    B = type_template()
+    C = type_member()
+  end
+
+  module ModuleWithTypeParams
+    extend T::Generic
+
+    A = type_member(:in)
+    B = type_member(:out)
+  end
+
+  # type_template invariant, in, out
+  # Aliases that pull in private classes
 end

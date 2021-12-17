@@ -138,6 +138,14 @@ private:
         }
     }
 
+    string showType(const core::TypePtr &type) {
+        if (type == nullptr) {
+            return "";
+        }
+        enqueueSymbolsInType(type);
+        return type.show(gs);
+    }
+
     string prettySigForMethod(const core::GlobalState &gs, core::MethodRef method, const core::TypePtr &receiver,
                               core::TypePtr retType, const core::TypeConstraint *constraint) {
         ENFORCE(method.exists());
@@ -154,7 +162,7 @@ private:
             enqueueSymbolsInType(retType);
         }
         string methodReturnType =
-            (retType == core::Types::void_()) ? "void" : absl::StrCat("returns(", retType.show(gs), ")");
+            (retType == core::Types::void_()) ? "void" : absl::StrCat("returns(", showType(retType), ")");
         vector<string> typeAndArgNames;
         vector<string> typeArguments;
 
@@ -180,8 +188,7 @@ private:
             // Don't display synthetic arguments (like blk).
             if (!argSym.isSyntheticBlockArgument()) {
                 auto argType = getResultType(gs, argSym.type, method, receiver, constraint);
-                enqueueSymbolsInType(argType);
-                typeAndArgNames.emplace_back(absl::StrCat(argSym.argumentName(gs), ": ", argType.show(gs)));
+                typeAndArgNames.emplace_back(absl::StrCat(argSym.argumentName(gs), ": ", showType(argType)));
             }
         }
 
@@ -395,14 +402,15 @@ private:
     string showVariance(core::TypeMemberRef tm) {
         if (tm.data(gs)->isFixed()) {
             auto &lambdaParam = core::cast_type_nonnull<core::LambdaParam>(tm.data(gs)->resultType);
-            return absl::StrCat("fixed: ", lambdaParam.upperBound.toString(gs));
+            return absl::StrCat("fixed: ", showType(lambdaParam.upperBound));
         }
 
         switch (tm.data(gs)->variance()) {
             case core::Variance::CoVariant:
                 return ":out";
             case core::Variance::Invariant:
-                return ":invariant";
+                // Default.
+                return "";
             case core::Variance::ContraVariant:
                 return ":in";
         }
@@ -448,7 +456,7 @@ private:
             auto alias = core::cast_type_nonnull<core::AliasType>(type);
             return alias.symbol.show(gs);
         } else {
-            return absl::StrCat("T.let(T.unsafe(nil), ", type.show(gs), ")");
+            return absl::StrCat("T.let(T.unsafe(nil), ", showType(type), ")");
         }
     }
 
@@ -463,8 +471,8 @@ private:
 
     void emitProp(core::NameRef name, const core::TypePtr &type, bool isConst, bool hasDefault) {
         string_view propType = isConst ? "const"sv : "prop"sv;
-        out.println("{} :{}, {}{}", propType, name.show(gs), type.show(gs),
-                    hasDefault ? absl::StrCat(", default: T.let(T.unsafe(nil), ", type.show(gs), ")") : "");
+        out.println("{} :{}, {}{}", propType, name.show(gs), showType(type),
+                    hasDefault ? absl::StrCat(", default: T.let(T.unsafe(nil), ", showType(type), ")") : "");
     }
 
     void emitStructProps(core::MethodRef structInitializer, vector<core::MethodRef> methods,
@@ -798,6 +806,8 @@ private:
                     }
                 }
             }
+
+            enqueueSymbolsInType(resultType);
 
             if (isCVar) {
                 out.println("{} = {}", field.data(gs)->name.show(gs), typeDeclaration(resultType));
