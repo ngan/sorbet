@@ -90,6 +90,8 @@ module RBIGen::Public
     prop :foo, Integer
     const :bar, T.nilable(String)
     const :quz, Float, default: 0.5
+    const :singleton_type, T.class_of(MyStruct)
+    const :singleton_type_with_type_params, T.class_of(ClassWithTypeParams)
 
     @field = T.let(10, Integer)
 

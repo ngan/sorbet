@@ -424,8 +424,11 @@ string AppliedType::show(const GlobalState &gs) const {
     }
 
     if (!targs.empty()) {
-        fmt::format_to(std::back_inserter(buf), "[{}]",
-                       fmt::map_join(targs, ", ", [&](auto targ) { return targ.show(gs); }));
+        // TODO: RBI Gen - when referencing a class type that contains unspecified type params, this prints
+        // klassname[T.untyped, T.untyped]
+        // If you uncomment this a test will fail.
+        //   fmt::format_to(std::back_inserter(buf), "[{}]",
+        //                 fmt::map_join(targs, ", ", [&](auto targ) { return targ.show(gs); }));
     }
     return to_string(buf);
 }

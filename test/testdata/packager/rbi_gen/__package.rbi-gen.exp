@@ -33,12 +33,16 @@ class RBIGen::Private::PrivateClassPulledInByClassAlias < Object
 end
 class RBIGen::Public::MyStruct < T::Struct
   prop :foo, Integer
+  const :singleton_type, T.class_of(RBIGen::Public::MyStruct)
+  const :singleton_type_with_type_params, T.class_of(RBIGen::Public::ClassWithTypeParams)
   const :bar, T.nilable(String), default: T.let(T.unsafe(nil), T.nilable(String))
   const :quz, Float, default: T.let(T.unsafe(nil), Float)
   sig {returns(Integer)}
   def extra_method; end
   extend T::Sig
   @field = T.let(T.unsafe(nil), Integer)
+end
+class RBIGen::Private::PrivateClassPulledInByTypeTemplate < Object
 end
 class RBIGen::Public::MyEnum < T::Enum
   abstract!
@@ -107,8 +111,6 @@ class RBIGen::Public::ClassWithTypeParams < Object
   extend T::Helpers
   A = type_template(fixed: RBIGen::Private::PrivateClassPulledInByTypeTemplate)
   B = type_template()
-end
-class RBIGen::Private::PrivateClassPulledInByTypeTemplate < Object
 end
 class RBIGen::Public::AttachedClassType < Object
   extend T::Sig
