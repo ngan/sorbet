@@ -858,7 +858,9 @@ private:
 
             enqueueSymbolsInType(resultType);
 
-            if (isCVar) {
+            if (field.data(gs)->isTypeAlias()) {
+                out.println("{} = T.type_alias {{{}}}", field.show(gs), showType(resultType));
+            } else if (isCVar) {
                 out.println("{} = {}", field.data(gs)->name.show(gs), typeDeclaration(resultType));
             } else {
                 out.println("{} = {}", field.show(gs), typeDeclaration(resultType));

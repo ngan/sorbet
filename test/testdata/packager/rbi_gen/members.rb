@@ -169,4 +169,6 @@ module RBIGen::Public
     def_delegator :@field, :concat, :aliased_concat
     def_delegators :@field, :size, :empty
   end
+
+  MaybeString = T.type_alias {T.nilable(String)}
 end

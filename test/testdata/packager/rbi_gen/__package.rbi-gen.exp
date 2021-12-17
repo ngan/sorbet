@@ -59,6 +59,7 @@ module RBIGen::Public::ModuleWithTypeParams
   extend T::Generic
   extend T::Helpers
 end
+RBIGen::Public::MaybeString = T.type_alias {T.nilable(String)}
 module RBIGen::Public::InterfaceModule
   abstract!
   interface!
