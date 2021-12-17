@@ -1,6 +1,7 @@
 #include "packager/rbi_gen.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
 #include "absl/synchronization/blocking_counter.h"
 #include "common/FileOps.h"
 #include "common/concurrency/ConcurrentQueue.h"
@@ -138,6 +139,49 @@ private:
         }
     }
 
+    bool tryEmitDefDelegator(core::MethodRef method) {
+        // HACK: the loc info for the first arg goes back to a string that begins with "def_delegator" or
+        // "def_delegators".
+        const auto &args = method.data(gs)->arguments;
+        if (args.empty()) {
+            return false;
+        }
+
+        constexpr string_view defDelegator = "def_delegator"sv;
+        constexpr string_view defDelegators = "def_delegators"sv;
+        auto argName = args[0].argumentName(gs);
+        if (!absl::StartsWith(argName, defDelegator)) {
+            return false;
+        }
+
+        // This is a def_delegator. Emit it properly.
+        // There are three forms:
+        // def_delegator :target, :method_on_target_name
+        // def_delegator :target, :method_on_target_name, :this_method_name
+        // def_delegators :target, :method1_on_target_name, :method2_on_target_name, ...
+
+        // We can emit the first two as-is. The third we can desugar into:
+        // def_delegator :target, :this_method_name
+        if (absl::StartsWith(argName, defDelegators)) {
+            auto components = absl::StrSplit(argName, absl::ByAnyChar(" \n(),"));
+            auto i = 0;
+            for (auto &component : components) {
+                ++i;
+                if (i > 1) {
+                    auto stripped = absl::StripAsciiWhitespace(component);
+                    if (!stripped.empty()) {
+                        out.println("def_delegator {}, :{}", stripped, method.data(gs)->name.show(gs));
+                        return true;
+                    }
+                }
+            }
+            Exception::raise("Invalid def_delegator!");
+        } else {
+            out.println(argName);
+        }
+        return true;
+    }
+
     string showType(const core::TypePtr &type) {
         if (type == nullptr) {
             return "";
@@ -146,8 +190,8 @@ private:
         return type.show(gs);
     }
 
-    string prettySigForMethod(const core::GlobalState &gs, core::MethodRef method, const core::TypePtr &receiver,
-                              core::TypePtr retType, const core::TypeConstraint *constraint) {
+    string prettySigForMethod(core::MethodRef method, const core::TypePtr &receiver, core::TypePtr retType,
+                              const core::TypeConstraint *constraint) {
         ENFORCE(method.exists());
         ENFORCE(method.data(gs)->dealiasMethod(gs) == method);
         // handle this case anyways so that we don't crash in prod when this method is mis-used
@@ -224,7 +268,7 @@ private:
                            methodReturnType);
     }
 
-    string prettyDefForMethod(const core::GlobalState &gs, core::MethodRef method) {
+    string prettyDefForMethod(core::MethodRef method) {
         ENFORCE(method.exists());
         // handle this case anyways so that we don't crash in prod when this method is mis-used
         if (!method.exists()) {
@@ -738,6 +782,10 @@ private:
             return;
         }
 
+        if (tryEmitDefDelegator(method)) {
+            return;
+        }
+
         // cerr << "Emitting " << method.show(gs) << "\n";
 
         for (auto &arg : method.data(gs)->arguments) {
@@ -746,10 +794,9 @@ private:
 
         if (method.data(gs)->hasSig()) {
             auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
-            out.println(
-                prettySigForMethod(gs, dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
+            out.println(prettySigForMethod(dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
         }
-        out.println(prettyDefForMethod(gs, method) + "; end");
+        out.println(prettyDefForMethod(method) + "; end");
     }
 
     void maybeEmitInitialized(core::MethodRef method, const std::vector<core::FieldRef> &fields) {
@@ -766,9 +813,9 @@ private:
             if (method.data(gs)->hasSig()) {
                 auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
                 out.println(
-                    prettySigForMethod(gs, dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
+                    prettySigForMethod(dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
             }
-            methodDef = prettyDefForMethod(gs, method);
+            methodDef = prettyDefForMethod(method);
         } else {
             out.println("sig {void}");
             methodDef = "def initialize";

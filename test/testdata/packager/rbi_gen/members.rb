@@ -154,4 +154,19 @@ module RBIGen::Public
     sig {void}
     module_function def sample_mod_fcn; end
   end
+
+  module DefDelegator
+    extend T::Sig
+    extend T::Helpers
+    extend Forwardable
+
+    sig {void}
+    def initialize
+      @field = T.let("", String)
+    end
+
+    def_delegator :@field, :length
+    def_delegator :@field, :concat, :aliased_concat
+    def_delegators :@field, :size, :empty
+  end
 end
