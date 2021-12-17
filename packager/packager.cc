@@ -1628,6 +1628,8 @@ public:
         out->append("[");
         fmt::format_to(back_inserter(*out), absl::StrJoin(pkg.imports(), ",", ImportFormatter(gs)));
         out->append("],[");
+        fmt::format_to(back_inserter(*out), absl::StrJoin(pkg.testImports(), ",", ImportFormatter(gs)));
+        out->append("],[");
         const auto it = packageFiles.find(mangledName);
         if (it != packageFiles.end()) {
             fmt::format_to(back_inserter(*out), absl::StrJoin(it->second, ",", FileListFormatter(gs)));
