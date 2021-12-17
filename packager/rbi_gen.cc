@@ -915,6 +915,8 @@ public:
             output.rbi = "# typed: true\n\n" + out.toString();
         }
 
+        // N.B.: We don't need to generate this in the same pass. Test code only relies on exported symbols from regular
+        // code...
         if (!testExports.empty()) {
             for (auto exportSymbol : testExports) {
                 maybeEmit(exportSymbol);

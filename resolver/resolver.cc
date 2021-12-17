@@ -570,6 +570,9 @@ private:
         // For LSP, create a synthetic method <unresolved-ancestors> that has a return type containing a type
         // for every ancestor. When this return type changes, LSP takes the slow path (see
         // Symbol::methodShapeHash()).
+        if (item.ancestor == nullptr) {
+            return;
+        }
         auto unresolvedPath = item.ancestor->fullUnresolvedPath(ctx);
         if (!unresolvedPath.has_value()) {
             return;
