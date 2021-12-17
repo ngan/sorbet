@@ -96,16 +96,25 @@ RBIGen::Public::FieldCheck::Constant = T.let(T.unsafe(nil), Integer)
 RBIGen::Public::FieldCheck::AliasConstant = T.let(T.unsafe(nil), T.class_of(RBIGen::Public::FieldCheck))
 RBIGen::Public::FieldCheck::Alias = RBIGen::Public::FieldCheck
 module RBIGen::Public::DefDelegator
-  def_delegator :@field, :concat, :aliased_concat
-  def_delegator :@field, :empty
-  def_delegator :@field, :length
-  def_delegator :@field, :size
   sig {void}
   def initialize
     @field = T.let(T.unsafe(nil), String)
   end
+  def_delegator :@field, :concat, :aliased_concat
+  def_delegator :@field, :empty
+  def_delegator :@field, :length
+  def_delegator :@field, :size
   extend Forwardable
   extend T::Helpers
+  extend T::Sig
+end
+class RBIGen::Public::CustomStruct < Object
+  include T::Props
+  const :bar, T.nilable(String)
+  prop :foo, Integer
+  sig {void}
+  def my_method; end
+  extend T::Props::ClassMethods
   extend T::Sig
 end
 class RBIGen::Public::ClassWithTypeParams < Object

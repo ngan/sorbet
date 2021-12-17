@@ -532,8 +532,32 @@ private:
                     hasDefault ? absl::StrCat(", default: T.let(T.unsafe(nil), ", showType(type), ")") : "");
     }
 
-    void emitStructProps(core::MethodRef structInitializer, vector<core::MethodRef> methods,
-                         vector<core::FieldRef> fields) {
+    void removePropField(vector<core::FieldRef> &fields, core::NameRef name) {
+        auto fieldName = name.lookupWithAt(gs);
+        fields.erase(
+            remove_if(fields.begin(), fields.end(),
+                      [&gs = this->gs, fieldName](core::FieldRef field) { return field.data(gs)->name == fieldName; }),
+            fields.end());
+    }
+
+    void removePropMethods(vector<core::MethodRef> &methods, core::NameRef name, bool &isConst) {
+        auto equalName = name.lookupWithEq(gs);
+        // Remove methods with the given name or `name=`.
+        // This isn't very efficient but YOLO.
+        methods.erase(remove_if(methods.begin(), methods.end(),
+                                [name, equalName, &gs = this->gs, &isConst](core::MethodRef method) {
+                                    auto methodName = method.data(gs)->name;
+                                    if (methodName == equalName) {
+                                        isConst = false;
+                                        return true;
+                                    }
+                                    return methodName == name;
+                                }),
+                      methods.end());
+    }
+
+    void maybeEmitStructProps(core::MethodRef structInitializer, vector<core::MethodRef> methods,
+                              vector<core::FieldRef> fields) {
         for (auto &arg : structInitializer.data(gs)->arguments) {
             if (arg.isSyntheticBlockArgument() || !arg.flags.isKeyword) {
                 continue;
@@ -541,26 +565,9 @@ private:
             bool hasDefault = arg.flags.isDefault;
             bool isConst = true;
             auto name = arg.name;
-            auto equalName = name.lookupWithEq(gs);
-            auto fieldName = name.lookupWithAt(gs);
 
-            // Remove methods with the given name or `name=`.
-            // This isn't very efficient but YOLO.
-            methods.erase(remove_if(methods.begin(), methods.end(),
-                                    [name, equalName, &gs = this->gs, &isConst](core::MethodRef method) {
-                                        auto methodName = method.data(gs)->name;
-                                        if (methodName == equalName) {
-                                            isConst = false;
-                                            return true;
-                                        }
-                                        return methodName == name;
-                                    }),
-                          methods.end());
-            fields.erase(remove_if(fields.begin(), fields.end(),
-                                   [&gs = this->gs, fieldName](core::FieldRef field) {
-                                       return field.data(gs)->name == fieldName;
-                                   }),
-                         fields.end());
+            removePropMethods(methods, name, isConst);
+            removePropField(fields, name);
             emitProp(name, arg.type, isConst, hasDefault);
         }
 
@@ -572,6 +579,19 @@ private:
         for (auto field : fields) {
             emit(field);
         }
+    }
+
+    bool isPropMethod(core::MethodRef method) {
+        if (absl::EndsWith(method.data(gs)->name.shortName(gs), "=")) {
+            // If there is a prop= method, there will be a prop method.
+            return false;
+        }
+
+        auto src = method.data(gs)->loc().source(gs);
+        if (!src) {
+            return false;
+        }
+        return absl::StartsWith(*src, "prop ") || absl::StartsWith(*src, "const ");
     }
 
     void emit(core::ClassOrModuleRef klass) {
@@ -643,7 +663,7 @@ private:
             core::MethodRef initializeMethod;
             vector<core::FieldRef> pendingFields;
             vector<core::ClassOrModuleRef> pendingEnumValues;
-            vector<core::MethodRef> pendingMethods; // For T::Struct.
+            vector<core::MethodRef> pendingMethods;
             for (auto &[name, member] : klass.data(gs)->membersStableOrderSlow(gs)) {
                 if (shouldSkipMember(name)) {
                     continue;
@@ -672,10 +692,8 @@ private:
                         if (name == core::Names::initialize()) {
                             // Defer outputting until we gather fields.
                             initializeMethod = member.asMethodRef();
-                        } else if (isStruct) {
-                            pendingMethods.emplace_back(member.asMethodRef());
                         } else {
-                            emit(member.asMethodRef());
+                            pendingMethods.emplace_back(member.asMethodRef());
                         }
                         break;
                     }
@@ -696,10 +714,39 @@ private:
             }
 
             if (isStruct) {
-                emitStructProps(initializeMethod, move(pendingMethods), move(pendingFields));
+                // T::Struct is special because the presence of default prop values changes
+                // the initializer that Props.cc creates. We use the initialize method to
+                // determine which props have default values.
+                maybeEmitStructProps(initializeMethod, move(pendingMethods), move(pendingFields));
             } else {
                 maybeEmitInitialized(initializeMethod, pendingFields);
             }
+
+            // Need to check for props and remove any fields that match them.
+            {
+                vector<core::MethodRef> propMethods;
+                // Done in two phases to prevent mutating `pendingMethods` in loop body.
+                for (auto method : pendingMethods) {
+                    if (isPropMethod(method)) {
+                        propMethods.emplace_back(method);
+                    }
+                }
+
+                for (auto &propMethod : propMethods) {
+                    auto name = propMethod.data(gs)->name;
+                    removePropField(pendingFields, name);
+                    bool isConst = true;
+                    removePropMethods(pendingMethods, name, isConst);
+                    // Defaults are not semantically important on non-T-Struct props.
+                    bool hasDefault = false;
+                    emitProp(name, propMethod.data(gs)->resultType, isConst, hasDefault);
+                }
+            }
+
+            for (auto method : pendingMethods) {
+                emit(method);
+            }
+            pendingMethods.clear();
             pendingFields.clear();
 
             auto singleton = klass.data(gs)->lookupSingletonClass(gs);

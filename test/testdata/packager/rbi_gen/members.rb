@@ -105,6 +105,18 @@ module RBIGen::Public
     end
   end
 
+  class CustomStruct
+    include T::Props
+    extend T::Sig
+
+    # The default value does not matter to the output.
+    prop :foo, Integer, default: 10
+    const :bar, T.nilable(String)
+
+    sig {void}
+    def my_method; end
+  end
+
   class FieldCheck
     extend T::Sig
   
