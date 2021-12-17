@@ -1623,18 +1623,19 @@ public:
 
     void operator()(std::string *out, core::NameRef mangledName) const {
         const auto &pkg = gs.packageDB().getPackageInfo(mangledName);
-        out->append("[");
+        out->append("{");
+        out->append("\"name\":");
         fmt::format_to(back_inserter(*out), "\"{}\",", absl::StrJoin(pkg.fullName(), "::", NameFormatter(gs)));
-        out->append("[");
+        out->append("\"imports\":[");
         fmt::format_to(back_inserter(*out), absl::StrJoin(pkg.imports(), ",", ImportFormatter(gs)));
-        out->append("],[");
+        out->append("],\"testImports\":[");
         fmt::format_to(back_inserter(*out), absl::StrJoin(pkg.testImports(), ",", ImportFormatter(gs)));
-        out->append("],[");
+        out->append("],\"files\":[");
         const auto it = packageFiles.find(mangledName);
         if (it != packageFiles.end()) {
             fmt::format_to(back_inserter(*out), absl::StrJoin(it->second, ",", FileListFormatter(gs)));
         }
-        out->append("]]");
+        out->append("]}");
     }
 };
 
