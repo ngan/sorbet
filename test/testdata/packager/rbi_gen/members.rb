@@ -150,6 +150,11 @@ module RBIGen::Public
     sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
     private def my_method(a); end
 
+    sig {returns(T::Array[String])}
+    def returns_generic_type
+      [""]
+    end
+
     sig {void}
     private_class_method def self.kls_method; end
 

@@ -401,6 +401,10 @@ string AppliedType::show(const GlobalState &gs) const {
             }
             return to_string(buf);
         } else {
+            if (this->klass.data(gs)->isSingletonClass(gs)) {
+                // T.class_of(klass)[arg1, arg2] is never valid syntax.
+                return this->klass.show(gs);
+            }
             fmt::format_to(std::back_inserter(buf), "{}", this->klass.show(gs));
         }
     }
@@ -424,11 +428,8 @@ string AppliedType::show(const GlobalState &gs) const {
     }
 
     if (!targs.empty()) {
-        // TODO: RBI Gen - when referencing a class type that contains unspecified type params, this prints
-        // klassname[T.untyped, T.untyped]
-        // If you uncomment this a test will fail.
-        //   fmt::format_to(std::back_inserter(buf), "[{}]",
-        //                 fmt::map_join(targs, ", ", [&](auto targ) { return targ.show(gs); }));
+        fmt::format_to(std::back_inserter(buf), "[{}]",
+                       fmt::map_join(targs, ", ", [&](auto targ) { return targ.show(gs); }));
     }
     return to_string(buf);
 }

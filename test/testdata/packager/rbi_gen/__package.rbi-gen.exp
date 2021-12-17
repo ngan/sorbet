@@ -7,6 +7,8 @@ module RBIGen::Public::VariousMethods
   def dotdotdot(...); end
   sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
   private def my_method(a); end
+  sig {returns(T::Array[String])}
+  def returns_generic_type; end
   sig {void}
   private def sample_mod_fcn; end
   extend T::Sig
