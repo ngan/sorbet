@@ -108,4 +108,15 @@ module RBIGen::Public
       @field = T.let(0, Integer)
     end
   end
+
+  class AliasMethod
+    extend T::Sig
+
+    alias_method :eql?, :==
+
+    sig {params(other: BasicObject).returns(T::Boolean)}
+    def ==(other)
+      false
+    end
+  end
 end

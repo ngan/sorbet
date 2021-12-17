@@ -68,6 +68,13 @@ end
 RBIGen::Public::FieldCheck::Constant = T.let(T.unsafe(nil), Integer)
 RBIGen::Public::FieldCheck::AliasConstant = T.let(T.unsafe(nil), T.class_of(RBIGen::Public::FieldCheck))
 RBIGen::Public::FieldCheck::Alias = RBIGen::Public::FieldCheck
+class RBIGen::Public::AliasMethod < Object
+  sig {params(other: BasicObject).returns(T::Boolean)}
+  def ==(other); end
+  sig {params(other: BasicObject).returns(RBIGen::Public::AliasMethod#==)}
+  def eql?(other); end
+  extend T::Sig
+end
 class RBIGen::Public::AbstractClass < Object
   abstract!
   sig {abstract.returns(String)}
