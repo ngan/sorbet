@@ -107,7 +107,7 @@ core::SymbolRef lookupFQN(const core::GlobalState &gs, const vector<core::NameRe
     core::SymbolRef scope = core::Symbols::root();
     for (auto name : fqn) {
         if (scope.isClassOrModule()) {
-            auto result = scope.asClassOrModuleRef().data(gs)->findMember(gs, name);
+            auto result = scope.asClassOrModuleRef().data(gs)->findMemberNoDealias(gs, name);
             if (!result.exists()) {
                 return core::Symbols::noClassOrModule();
             }
@@ -473,37 +473,37 @@ private:
         }
     }
 
-    bool isInTestPackage(core::SymbolRef klass) {
-        if (klass == core::Symbols::root() || klass == core::Symbols::PackageRegistry()) {
+    bool isInTestPackage(core::SymbolRef sym) {
+        if (sym == core::Symbols::root() || sym == core::Symbols::PackageRegistry()) {
             return false;
         }
-        if (klass == pkgNamespace) {
+        if (sym == pkgNamespace) {
             return false;
         }
-        if (klass == pkgTestNamespace) {
+        if (sym == pkgTestNamespace) {
             return true;
         }
-        if (klass.isClassOrModule()) {
-            if (pkgNamespaces.contains(klass.asClassOrModuleRef())) {
+        if (sym.isClassOrModule()) {
+            if (pkgNamespaces.contains(sym.asClassOrModuleRef())) {
                 return false;
             }
         }
-        return isInTestPackage(klass.owner(gs));
+        return isInTestPackage(sym.owner(gs));
     }
 
-    bool isInPackage(core::SymbolRef klass) {
-        if (klass == core::Symbols::root() || klass == core::Symbols::PackageRegistry()) {
+    bool isInPackage(core::SymbolRef sym) {
+        if (sym == core::Symbols::root() || sym == core::Symbols::PackageRegistry()) {
             return false;
         }
-        if (klass == pkgNamespace || klass == pkgTestNamespace) {
+        if (sym == pkgNamespace || sym == pkgTestNamespace) {
             return true;
         }
-        if (klass.isClassOrModule()) {
-            if (pkgNamespaces.contains(klass.asClassOrModuleRef())) {
+        if (sym.isClassOrModule()) {
+            if (pkgNamespaces.contains(sym.asClassOrModuleRef())) {
                 return false;
             }
         }
-        return isInPackage(klass.owner(gs));
+        return isInPackage(sym.owner(gs));
     }
 
     string typeDeclaration(const core::TypePtr &type) {

@@ -11,6 +11,10 @@ module RBIGen::Private
   class PrivateClassForTests; end
 end
 
+module RBIGen::DirectlyExported
+  MyString = String
+end
+
 module RBIGen::Public
   class RefersToPrivateTypes
     extend T::Sig
