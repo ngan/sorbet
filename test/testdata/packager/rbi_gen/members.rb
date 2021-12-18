@@ -101,6 +101,7 @@ module RBIGen::Public
 
     sig {returns(Integer)}
     def extra_method
+      @internal_field = T.let(10, T.nilable(Integer))
       10
     end
   end
@@ -202,6 +203,22 @@ module RBIGen::Public
 
     sig {params(a: T.proc.params(arg: T.attached_class).void).void}
     def self.method(a)
+    end
+  end
+
+  class HasInitializer
+    extend T::Sig
+
+    sig {params(a: Integer).void}
+    def initialize(a); end
+  end
+
+  class InheritsInitializer < HasInitializer
+    extend T::Sig
+
+    sig {void}
+    def declares_field
+      @field = T.let(10, T.nilable(Integer))
     end
   end
 end

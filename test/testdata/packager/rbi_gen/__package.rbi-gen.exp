@@ -41,7 +41,9 @@ class RBIGen::Public::MyStruct < T::Struct
   const :bar, T.nilable(String), default: T.let(T.unsafe(nil), T.nilable(String))
   const :quz, Float, default: T.let(T.unsafe(nil), Float)
   sig {returns(Integer)}
-  def extra_method; end
+  def extra_method
+    @internal_field = T.let(T.unsafe(nil), T.nilable(Integer))
+  end
   extend T::Sig
   @field = T.let(T.unsafe(nil), Integer)
 end
@@ -75,6 +77,17 @@ module RBIGen::Public::InterfaceModule
   def interface_method; end
   extend T::Sig
   extend T::Helpers
+end
+class RBIGen::Public::InheritsInitializer < RBIGen::Public::HasInitializer
+  sig {void}
+  def declares_field
+    @field = T.let(T.unsafe(nil), T.nilable(Integer))
+  end
+end
+class RBIGen::Public::HasInitializer < Object
+  sig {params(a: Integer).void}
+  def initialize(a); end
+  extend T::Sig
 end
 class RBIGen::Public::FinalClass < Object
   final!
