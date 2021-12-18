@@ -816,7 +816,7 @@ private:
     }
 
     // Emits method and declares fields in its body.
-    void emit(core::MethodRef method, vector<core::FieldRef> fields) {
+    void emit(core::MethodRef method, vector<core::FieldRef> &fields) {
         if (emittedSymbols.contains(method)) {
             return;
         }

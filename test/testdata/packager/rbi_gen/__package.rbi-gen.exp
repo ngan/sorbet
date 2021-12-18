@@ -44,6 +44,8 @@ class RBIGen::Public::MyStruct < T::Struct
   def extra_method
     @internal_field = T.let(T.unsafe(nil), T.nilable(Integer))
   end
+  sig {void}
+  def later_method; end
   extend T::Sig
   @field = T.let(T.unsafe(nil), Integer)
 end
@@ -102,6 +104,8 @@ class RBIGen::Public::FieldCheck < Object
   def initialize
     @field = T.let(T.unsafe(nil), Integer)
   end
+  sig {void}
+  def empty_method; end
   extend T::Sig
   @statically_declared_field = T.let(T.unsafe(nil), Integer)
 end

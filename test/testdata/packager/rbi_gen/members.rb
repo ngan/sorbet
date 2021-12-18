@@ -104,6 +104,9 @@ module RBIGen::Public
       @internal_field = T.let(10, T.nilable(Integer))
       10
     end
+
+    sig {void}
+    def later_method; end
   end
 
   class CustomStruct
@@ -133,6 +136,9 @@ module RBIGen::Public
     def initialize
       @field = T.let(0, Integer)
     end
+
+    sig {void}
+    def empty_method; end
   end
 
   class AliasMethod
