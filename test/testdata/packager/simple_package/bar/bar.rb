@@ -7,4 +7,11 @@ class Project::Bar::Bar
   def initialize(value)
     @value = T.let(value, Integer)
   end
+
+  class << self
+    extend T::Sig
+    sig {void}
+    def method_on_singleton_class
+    end
+  end
 end
