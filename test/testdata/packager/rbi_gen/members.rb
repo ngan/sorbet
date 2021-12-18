@@ -178,6 +178,14 @@ module RBIGen::Public
       [""]
     end
 
+    sig {returns({'str' => Integer, symb: Integer})}
+    def returns_shape_type
+      {
+        'str' => 10,
+        symb: 10,
+      }
+    end
+
     sig {void}
     private_class_method def self.kls_method; end
 

@@ -123,13 +123,14 @@ string ShapeType::show(const GlobalState &gs) const {
         } else {
             fmt::format_to(std::back_inserter(buf), ", ");
         }
-        auto underlying = cast_type_nonnull<LiteralType>(key).underlying(gs);
+        auto keyLiteral = cast_type_nonnull<LiteralType>(key);
+        auto underlying = keyLiteral.underlying(gs);
         ClassOrModuleRef undSymbol = cast_type_nonnull<ClassType>(underlying).symbol;
         if (undSymbol == Symbols::Symbol()) {
             fmt::format_to(std::back_inserter(buf), "{}: {}", cast_type_nonnull<LiteralType>(key).asName(gs).show(gs),
                            (*valueIterator).show(gs));
         } else {
-            fmt::format_to(std::back_inserter(buf), "{} => {}", key.show(gs), (*valueIterator).show(gs));
+            fmt::format_to(std::back_inserter(buf), "{} => {}", keyLiteral.showValue(gs), (*valueIterator).show(gs));
         }
         ++valueIterator;
     }
