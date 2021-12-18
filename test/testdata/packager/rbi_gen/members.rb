@@ -170,6 +170,8 @@ module RBIGen::Public
   module VariousMethods
     extend T::Sig
 
+    MyString = T.type_alias {String}
+
     sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
     private def my_method(a); end
 
@@ -184,6 +186,16 @@ module RBIGen::Public
         'str' => 10,
         symb: 10,
       }
+    end
+
+    sig {returns(MyString)}
+    def returns_type_alias
+      ""
+    end
+
+    sig {returns(T.any(String, [T.deprecated_enum([:D]), Integer], Integer))}
+    def returns_any_with_literals
+      "A"
     end
 
     sig {void}

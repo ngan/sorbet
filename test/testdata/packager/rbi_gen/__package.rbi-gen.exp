@@ -8,10 +8,14 @@ module RBIGen::Public::VariousMethods
   def dotdotdot(...); end
   sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
   private def my_method(a); end
+  sig {returns(T.any(String, [T.deprecated_enum([:D]), Integer], Integer))}
+  def returns_any_with_literals; end
   sig {returns(T::Array[String])}
   def returns_generic_type; end
   sig {returns({"str" => Integer, symb: Integer})}
   def returns_shape_type; end
+  sig {returns(String)}
+  def returns_type_alias; end
   sig {void}
   private def sample_mod_fcn; end
   extend T::Sig
@@ -22,6 +26,7 @@ module RBIGen::Public::VariousMethods
 end
 class RBIGen::Private::PrivateClassPulledInByPrivateMethod < Object
 end
+RBIGen::Public::VariousMethods::MyString = T.type_alias {String}
 class RBIGen::Public::SealedClass < Object
   sealed!
   extend T::Helpers
