@@ -850,7 +850,7 @@ private:
             auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
             out.println(prettySigForMethod(dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
         }
-        if (fields.empty()) {
+        if (fields.empty() || method.data(gs)->flags.isAbstract) {
             out.println(prettyDefForMethod(method) + "; end");
         } else {
             out.println(prettyDefForMethod(method));

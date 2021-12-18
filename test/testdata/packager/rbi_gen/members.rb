@@ -221,6 +221,13 @@ module RBIGen::Public
 
   class InheritsInitializer < HasInitializer
     extend T::Sig
+    extend T::Helpers
+
+    abstract!
+
+    # Ensures that we don't put field decls into abstract methods!
+    sig {abstract.void}
+    def abstract_method; end
 
     sig {void}
     def declares_field
