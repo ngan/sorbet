@@ -571,6 +571,8 @@ private:
             emitProp(name, arg.type, isConst, hasDefault);
         }
 
+        emit(structInitializer, fields);
+
         // Emit the rest of the methods and fields.
         for (auto method : methods) {
             emit(method, fields);
