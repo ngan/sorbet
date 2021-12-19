@@ -95,6 +95,16 @@ module RBIGen::Public::ModuleWithTypeParams
   extend T::Generic
   extend T::Helpers
 end
+module RBIGen::Public::MixesInClassMethods
+  mixes_in_class_methods(RBIGen::Public::MixesInClassMethods::ClassMethods)
+  extend T::Generic
+  extend T::Helpers
+end
+module RBIGen::Public::MixesInClassMethods::ClassMethods
+  sig {void}
+  def method; end
+  extend T::Sig
+end
 RBIGen::Public::MaybeString = T.type_alias {T.nilable(String)}
 module RBIGen::Public::InterfaceModule
   abstract!

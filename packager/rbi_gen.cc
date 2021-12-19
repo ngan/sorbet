@@ -833,6 +833,13 @@ private:
 
         if (absl::StartsWith(method.data(gs)->name.shortName(gs), "<")) {
             // Sorbet-internal method (e.g., a test method).
+            if (method.data(gs)->name == core::Names::mixedInClassMethods()) {
+                auto &mixedIn = (core::cast_type<core::TupleType>(method.data(gs)->resultType))->elems;
+                for (auto &mixedType : mixedIn) {
+                    auto mixed = core::cast_type_nonnull<core::ClassType>(mixedType);
+                    out.println("mixes_in_class_methods({})", mixed.show(gs));
+                }
+            }
             return;
         }
 

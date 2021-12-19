@@ -254,4 +254,17 @@ module RBIGen::Public
       @field = T.let(10, T.nilable(Integer))
     end
   end
+
+  module MixesInClassMethods
+    extend T::Generic
+
+    module ClassMethods
+      extend T::Sig
+
+      sig {void}
+      def method; end
+    end
+
+    mixes_in_class_methods(ClassMethods)
+  end
 end
