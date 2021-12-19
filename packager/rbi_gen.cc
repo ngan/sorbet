@@ -567,7 +567,6 @@ private:
             auto name = arg.name;
 
             removePropMethods(methods, name, isConst);
-            removePropField(fields, name);
             emitProp(name, arg.type, isConst, hasDefault);
         }
 

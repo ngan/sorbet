@@ -64,7 +64,12 @@ class RBIGen::Public::MyStruct < T::Struct
     bar: T.let(T.unsafe(nil), T.untyped),
     quz: T.let(T.unsafe(nil), T.untyped)
   )
+    @bar = T.let(T.unsafe(nil), T.nilable(String))
+    @foo = T.let(T.unsafe(nil), Integer)
     @internal_field = T.let(T.unsafe(nil), T.nilable(Integer))
+    @quz = T.let(T.unsafe(nil), Float)
+    @singleton_type = T.let(T.unsafe(nil), T.class_of(RBIGen::Public::MyStruct))
+    @singleton_type_with_type_params = T.let(T.unsafe(nil), T.class_of(RBIGen::Public::ClassWithTypeParams))
   end
   sig {returns(Integer)}
   def extra_method; end
