@@ -71,6 +71,17 @@ public:
     }
 };
 
+class QuoteStringFileFormatter final {
+    const core::GlobalState &gs;
+
+public:
+    QuoteStringFileFormatter(const core::GlobalState &gs) : gs(gs) {}
+
+    void operator()(std::string *out, core::FileRef file) const {
+        out->append(fmt::format("\"{}\"", file.data(gs).path()));
+    }
+};
+
 class Indent {
 private:
     Output &out;
@@ -141,6 +152,7 @@ private:
     UnorderedSet<core::SymbolRef> emittedSymbols;
     // package => blame, for debugging
     UnorderedMap<core::ClassOrModuleRef, core::SymbolRef> referencedPackages;
+    UnorderedSet<core::FileRef> referencedRBIs;
     vector<core::SymbolRef> toEmit;
     void maybeEmit(core::SymbolRef symbol) {
         if (symbol.isClassOrModule() && symbol.asClassOrModuleRef().data(gs)->isSingletonClass(gs)) {
@@ -150,6 +162,11 @@ private:
         if (!emittedSymbols.contains(symbol) && isInPackage(symbol, symbol)) {
             emittedSymbols.insert(symbol);
             toEmit.emplace_back(symbol);
+        } else {
+            auto loc = symbol.loc(gs);
+            if (loc.exists() && loc.file().data(gs).isRBI()) {
+                referencedRBIs.insert(loc.file());
+            }
         }
     }
 
@@ -1028,9 +1045,10 @@ public:
             emitLoop();
 
             output.rbi = "# typed: true\n\n" + out.toString();
-            output.rbiPackageDependencies =
-                fmt::format("[{}]", absl::StrJoin(referencedPackages.begin(), referencedPackages.end(), ",",
-                                                  QuoteStringNameFormatter(gs)));
+            output.rbiPackageDependencies = fmt::format(
+                "{{\"packageRefs\":{}, \"rbiRefs\":{}}}",
+                absl::StrJoin(referencedPackages.begin(), referencedPackages.end(), ",", QuoteStringNameFormatter(gs)),
+                absl::StrJoin(referencedRBIs.begin(), referencedRBIs.end(), ",", QuoteStringFileFormatter(gs)));
         }
 
         // N.B.: We don't need to generate this in the same pass. Test code only relies on exported symbols from regular
