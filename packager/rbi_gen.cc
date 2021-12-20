@@ -571,7 +571,14 @@ private:
             emitProp(name, arg.type, isConst, hasDefault);
         }
 
-        emit(structInitializer, fields);
+        // If the user wrote their own initializer, it will unfortunately be marked as rewriter synthesized.
+        // rewriter-created initializers use the loc of the class, whereas user initializers have their own loc.
+        // Use that to determine if we should emit an initialize block.
+        // This is important if a class has custom @fields that are non-nilable and thus need to be defined inside
+        // `initialize`.
+        if (structInitializer.data(gs)->loc() != structInitializer.data(gs)->owner.data(gs)->loc()) {
+            emit(structInitializer, fields);
+        }
 
         // Emit the rest of the methods and fields.
         for (auto method : methods) {

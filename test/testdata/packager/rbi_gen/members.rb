@@ -109,6 +109,17 @@ module RBIGen::Public
     def later_method; end
   end
 
+  class StructWithInitializer < T::Struct
+    extend T::Sig
+
+    prop :foo, T.nilable(String)
+
+    sig {params(foo: T.nilable(String)).void}
+    def initialize(foo: nil)
+      @extra_prop = T.let("", String)
+    end
+  end
+
   class CustomStruct
     include T::Props
     extend T::Sig

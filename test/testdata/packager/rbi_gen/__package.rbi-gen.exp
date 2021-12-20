@@ -27,6 +27,14 @@ end
 class RBIGen::Private::PrivateClassPulledInByPrivateMethod < Object
 end
 RBIGen::Public::VariousMethods::MyString = T.type_alias {String}
+class RBIGen::Public::StructWithInitializer < T::Struct
+  prop :foo, T.nilable(String), default: T.let(T.unsafe(nil), T.nilable(String))
+  sig {params(foo: T.nilable(String)).void}
+  def initialize(foo: T.let(T.unsafe(nil), T.untyped))
+    @extra_prop = T.let(T.unsafe(nil), String)
+  end
+  extend T::Sig
+end
 class RBIGen::Public::SealedClass < Object
   sealed!
   extend T::Helpers
@@ -47,27 +55,10 @@ class RBIGen::Public::MyStruct < T::Struct
   const :singleton_type_with_type_params, T.class_of(RBIGen::Public::ClassWithTypeParams)
   const :bar, T.nilable(String), default: T.let(T.unsafe(nil), T.nilable(String))
   const :quz, Float, default: T.let(T.unsafe(nil), Float)
-  sig do
-    params(
-      foo: Integer,
-      singleton_type: T.class_of(RBIGen::Public::MyStruct),
-      singleton_type_with_type_params: T.class_of(RBIGen::Public::ClassWithTypeParams),
-      bar: T.nilable(String),
-      quz: Float
-    )
-    .void
-  end
-  def initialize(
-    foo:,
-    singleton_type:,
-    singleton_type_with_type_params:,
-    bar: T.let(T.unsafe(nil), T.untyped),
-    quz: T.let(T.unsafe(nil), T.untyped)
-  )
+  sig {returns(Integer)}
+  def extra_method
     @internal_field = T.let(T.unsafe(nil), T.nilable(Integer))
   end
-  sig {returns(Integer)}
-  def extra_method; end
   sig {void}
   def later_method; end
   extend T::Sig
