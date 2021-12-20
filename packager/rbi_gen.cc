@@ -691,6 +691,12 @@ private:
                 switch (member.kind()) {
                     case core::SymbolRef::Kind::ClassOrModule: {
                         auto memberKlass = member.asClassOrModuleRef();
+                        if (pkgNamespaces.contains(memberKlass)) {
+                            // Ignore members of this class/module that are subpackages.
+                            // Fixes issues where .deps.json contains subpackages despite there being no references to
+                            // subpackages in the .rbi.
+                            continue;
+                        }
                         if (isEnum && memberKlass.data(gs)->superClass() == klass) {
                             pendingEnumValues.emplace_back(memberKlass);
                         } else {
@@ -787,6 +793,12 @@ private:
 
                     switch (member.kind()) {
                         case core::SymbolRef::Kind::ClassOrModule: {
+                            if (pkgNamespaces.contains(member.asClassOrModuleRef())) {
+                                // Ignore members of this class/module that are subpackages.
+                                // Fixes issues where .deps.json contains subpackages despite there being no references
+                                // to subpackages in the .rbi.
+                                continue;
+                            }
                             maybeEmit(member);
                             break;
                         }
