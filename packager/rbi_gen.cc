@@ -1,5 +1,6 @@
 #include "packager/rbi_gen.h"
 #include "absl/strings/match.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/synchronization/blocking_counter.h"
@@ -56,6 +57,17 @@ public:
         auto output = fmt::to_string(out);
         out.clear();
         return output;
+    }
+};
+
+class QuoteStringNameFormatter final {
+    const core::GlobalState &gs;
+
+public:
+    QuoteStringNameFormatter(const core::GlobalState &gs) : gs(gs) {}
+
+    void operator()(std::string *out, core::ClassOrModuleRef klass) const {
+        out->append(fmt::format("{}", klass.data(gs)->name.shortName(gs)));
     }
 };
 
@@ -127,6 +139,7 @@ private:
     const core::ClassOrModuleRef pkgTestNamespace;
     const UnorderedSet<core::ClassOrModuleRef> &pkgNamespaces;
     UnorderedSet<core::SymbolRef> emittedSymbols;
+    UnorderedSet<core::ClassOrModuleRef> referencedPackages;
     vector<core::SymbolRef> toEmit;
     void maybeEmit(core::SymbolRef symbol) {
         if (symbol.isClassOrModule() && symbol.asClassOrModuleRef().data(gs)->isSingletonClass(gs)) {
@@ -485,6 +498,7 @@ private:
         }
         if (sym.isClassOrModule()) {
             if (pkgNamespaces.contains(sym.asClassOrModuleRef())) {
+                referencedPackages.insert(sym.asClassOrModuleRef());
                 return false;
             }
         }
@@ -500,6 +514,7 @@ private:
         }
         if (sym.isClassOrModule()) {
             if (pkgNamespaces.contains(sym.asClassOrModuleRef())) {
+                referencedPackages.insert(sym.asClassOrModuleRef());
                 return false;
             }
         }
@@ -1008,6 +1023,9 @@ public:
             emitLoop();
 
             output.rbi = "# typed: true\n\n" + out.toString();
+            output.rbiPackageDependencies =
+                fmt::format("[{}]", absl::StrJoin(referencedPackages.begin(), referencedPackages.end(), ",",
+                                                  QuoteStringNameFormatter(gs)));
         }
 
         // N.B.: We don't need to generate this in the same pass. Test code only relies on exported symbols from regular
@@ -1022,6 +1040,9 @@ public:
             auto rbiText = out.toString();
             if (!rbiText.empty()) {
                 output.testRBI = "# typed: true\n\n" + rbiText;
+                output.testRBIPackageDependencies =
+                    fmt::format("[{}]", absl::StrJoin(referencedPackages.begin(), referencedPackages.end(), ",",
+                                                      QuoteStringNameFormatter(gs)));
             }
         }
 
@@ -1092,10 +1113,14 @@ void RBIGenerator::run(core::GlobalState &gs, vector<ast::ParsedFile> packageFil
                 auto output = runOnce(rogs, job, packageNamespaces);
                 if (!output.rbi.empty()) {
                     FileOps::write(absl::StrCat(outputDir, "/", output.baseFilePath, ".rbi"), output.rbi);
+                    FileOps::write(absl::StrCat(outputDir, "/", output.baseFilePath, ".deps.json"),
+                                   output.rbiPackageDependencies);
                 }
 
                 if (!output.testRBI.empty()) {
                     FileOps::write(absl::StrCat(outputDir, "/", output.baseFilePath, ".test.rbi"), output.testRBI);
+                    FileOps::write(absl::StrCat(outputDir, "/", output.baseFilePath, ".test.deps.json"),
+                                   output.testRBIPackageDependencies);
                 }
             }
         }
