@@ -66,8 +66,8 @@ class QuoteStringNameFormatter final {
 public:
     QuoteStringNameFormatter(const core::GlobalState &gs) : gs(gs) {}
 
-    void operator()(std::string *out, core::ClassOrModuleRef klass) const {
-        out->append(fmt::format("\"{}\"", klass.show(gs)));
+    void operator()(std::string *out, pair<core::ClassOrModuleRef, core::SymbolRef> klass) const {
+        out->append(fmt::format("\"{}|{}\"", klass.first.show(gs), klass.second.show(gs)));
     }
 };
 
@@ -139,14 +139,15 @@ private:
     const core::ClassOrModuleRef pkgTestNamespace;
     const UnorderedSet<core::ClassOrModuleRef> &pkgNamespaces;
     UnorderedSet<core::SymbolRef> emittedSymbols;
-    UnorderedSet<core::ClassOrModuleRef> referencedPackages;
+    // package => blame, for debugging
+    UnorderedMap<core::ClassOrModuleRef, core::SymbolRef> referencedPackages;
     vector<core::SymbolRef> toEmit;
     void maybeEmit(core::SymbolRef symbol) {
         if (symbol.isClassOrModule() && symbol.asClassOrModuleRef().data(gs)->isSingletonClass(gs)) {
             maybeEmit(symbol.asClassOrModuleRef().data(gs)->attachedClass(gs));
             return;
         }
-        if (!emittedSymbols.contains(symbol) && isInPackage(symbol)) {
+        if (!emittedSymbols.contains(symbol) && isInPackage(symbol, symbol)) {
             emittedSymbols.insert(symbol);
             toEmit.emplace_back(symbol);
         }
@@ -502,7 +503,7 @@ private:
         return isInTestPackage(sym.owner(gs));
     }
 
-    bool isInPackage(core::SymbolRef sym) {
+    bool isInPackage(core::SymbolRef sym, core::SymbolRef original) {
         if (sym == core::Symbols::root() || sym == core::Symbols::PackageRegistry()) {
             return false;
         }
@@ -511,11 +512,11 @@ private:
         }
         if (sym.isClassOrModule()) {
             if (pkgNamespaces.contains(sym.asClassOrModuleRef())) {
-                referencedPackages.insert(sym.asClassOrModuleRef());
+                referencedPackages[sym.asClassOrModuleRef()] = original;
                 return false;
             }
         }
-        return isInPackage(sym.owner(gs));
+        return isInPackage(sym.owner(gs), sym);
     }
 
     string typeDeclaration(const core::TypePtr &type) {
@@ -613,7 +614,7 @@ private:
     }
 
     void emit(core::ClassOrModuleRef klass) {
-        if (!isInPackage(klass) || !emittedSymbols.contains(klass)) {
+        if (!isInPackage(klass, klass) || !emittedSymbols.contains(klass)) {
             // We don't emit class definitions for items defined in other packages.
             Exception::raise("Invalid klass");
         }
