@@ -67,7 +67,7 @@ public:
     QuoteStringNameFormatter(const core::GlobalState &gs) : gs(gs) {}
 
     void operator()(std::string *out, pair<core::ClassOrModuleRef, core::SymbolRef> klass) const {
-        out->append(fmt::format("\"{}|{}\"", klass.first.show(gs), klass.second.show(gs)));
+        out->append(fmt::format("\"{}\"", klass.first.show(gs)));
     }
 };
 
