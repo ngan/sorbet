@@ -215,9 +215,6 @@ private:
         if (!retType) {
             retType = getResultType(gs, method.data(gs)->resultType, method, receiver, constraint);
         }
-        if (retType) {
-            enqueueSymbolsInType(retType);
-        }
         string methodReturnType =
             (retType == core::Types::void_()) ? "void" : absl::StrCat("returns(", showType(retType), ")");
         vector<string> typeAndArgNames;
@@ -458,9 +455,10 @@ private:
                 break;
             }
             case core::TypePtr::Tag::LambdaParam: {
-                const auto &lambdaParam = core::cast_type_nonnull<core::LambdaParam>(type);
-                enqueueSymbolsInType(lambdaParam.lowerBound);
-                enqueueSymbolsInType(lambdaParam.upperBound);
+                // Running .show on LambdaParam doesn't print out the types.
+                // const auto &lambdaParam = core::cast_type_nonnull<core::LambdaParam>(type);
+                // enqueueSymbolsInType(lambdaParam.lowerBound);
+                // enqueueSymbolsInType(lambdaParam.upperBound);
                 break;
             }
         }
@@ -498,7 +496,6 @@ private:
         }
         if (sym.isClassOrModule()) {
             if (pkgNamespaces.contains(sym.asClassOrModuleRef())) {
-                referencedPackages.insert(sym.asClassOrModuleRef());
                 return false;
             }
         }
@@ -526,6 +523,7 @@ private:
             return absl::StrCat("T.let(T.unsafe(nil), ", core::Types::untypedUntracked().show(gs), ")");
         } else if (core::isa_type<core::AliasType>(type)) {
             auto alias = core::cast_type_nonnull<core::AliasType>(type);
+            maybeEmit(alias.symbol);
             return alias.symbol.show(gs);
         } else {
             return absl::StrCat("T.let(T.unsafe(nil), ", showType(type), ")");
@@ -871,10 +869,6 @@ private:
 
         // cerr << "Emitting " << method.show(gs) << "\n";
 
-        for (auto &arg : method.data(gs)->arguments) {
-            enqueueSymbolsInType(arg.type);
-        }
-
         if (method.data(gs)->hasSig()) {
             auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
             out.println(prettySigForMethod(dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
@@ -915,8 +909,6 @@ private:
                     }
                 }
             }
-
-            enqueueSymbolsInType(resultType);
 
             if (field.data(gs)->isTypeAlias()) {
                 out.println("{} = T.type_alias {{{}}}", field.show(gs), showType(resultType));
