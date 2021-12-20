@@ -162,11 +162,6 @@ private:
         if (!emittedSymbols.contains(symbol) && isInPackage(symbol, symbol)) {
             emittedSymbols.insert(symbol);
             toEmit.emplace_back(symbol);
-        } else {
-            auto loc = symbol.loc(gs);
-            if (loc.exists() && loc.file().data(gs).isRBI()) {
-                referencedRBIs.insert(loc.file());
-            }
         }
     }
 
@@ -522,6 +517,11 @@ private:
 
     bool isInPackage(core::SymbolRef sym, core::SymbolRef original) {
         if (sym == core::Symbols::root() || sym == core::Symbols::PackageRegistry()) {
+            // Symbol isn't part of a package. Check if it was defined in an RBI.
+            auto loc = sym.loc(gs);
+            if (loc.exists() && loc.file().data(gs).isRBI() && !loc.file().data(gs).isPayload()) {
+                referencedRBIs.insert(loc.file());
+            }
             return false;
         }
         if (sym == pkgNamespace || sym == pkgTestNamespace) {
@@ -533,7 +533,7 @@ private:
                 return false;
             }
         }
-        return isInPackage(sym.owner(gs), sym);
+        return isInPackage(sym.owner(gs), original);
     }
 
     string typeDeclaration(const core::TypePtr &type) {
