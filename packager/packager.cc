@@ -1612,13 +1612,17 @@ public:
     }
 };
 
+struct PackageFiles {
+    vector<core::FileRef> files;
+    vector<core::FileRef> testFiles;
+};
+
 class PackageInfoFormatter final {
     const core::GlobalState &gs;
-    const UnorderedMap<core::NameRef, vector<core::FileRef>> &packageFiles;
+    const UnorderedMap<core::NameRef, PackageFiles> &packageFiles;
 
 public:
-    PackageInfoFormatter(const core::GlobalState &gs,
-                         const UnorderedMap<core::NameRef, vector<core::FileRef>> &packageFiles)
+    PackageInfoFormatter(const core::GlobalState &gs, const UnorderedMap<core::NameRef, PackageFiles> &packageFiles)
         : gs(gs), packageFiles(packageFiles) {}
 
     void operator()(std::string *out, core::NameRef mangledName) const {
@@ -1633,7 +1637,11 @@ public:
         out->append("],\"files\":[");
         const auto it = packageFiles.find(mangledName);
         if (it != packageFiles.end()) {
-            fmt::format_to(back_inserter(*out), absl::StrJoin(it->second, ",", FileListFormatter(gs)));
+            fmt::format_to(back_inserter(*out), absl::StrJoin(it->second.files, ",", FileListFormatter(gs)));
+        }
+        out->append("], \"testFiles\":[");
+        if (it != packageFiles.end()) {
+            fmt::format_to(back_inserter(*out), absl::StrJoin(it->second.testFiles, ",", FileListFormatter(gs)));
         }
         out->append("]}}");
     }
@@ -1644,12 +1652,16 @@ public:
 void Packager::dumpPackageInfo(const core::GlobalState &gs, std::string outputFile) {
     const auto &pkgDB = gs.packageDB();
     // package => files
-    UnorderedMap<core::NameRef, vector<core::FileRef>> packageFiles;
+    UnorderedMap<core::NameRef, PackageFiles> packageFiles;
     for (uint32_t i = 1; i < gs.filesUsed(); ++i) {
         core::FileRef file(i);
         const auto &pkg = pkgDB.getPackageForFile(gs, file);
         if (pkg.exists()) {
-            packageFiles[pkg.mangledName()].emplace_back(file);
+            if (pkgDB.isTestFile(gs, file.data(gs))) {
+                packageFiles[pkg.mangledName()].testFiles.emplace_back(file);
+            } else {
+                packageFiles[pkg.mangledName()].files.emplace_back(file);
+            }
         }
     }
 
