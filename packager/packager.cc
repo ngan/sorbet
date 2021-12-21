@@ -616,6 +616,32 @@ private:
     }
 };
 
+class Next final {
+public:
+
+    const vector<core::NameRef> &names;
+    Next(vector<core::NameRef> &names) : names(names) {}
+
+    bool operator<(const vector<core::NameRef> &rhs) {
+        if (names.empty()) {
+            return true;
+        }
+        auto size = names.size() - 1;
+        if (std::equal(names.begin(), names.begin() + size, rhs.begin(), rhs.begin() + size)) {
+            return true;
+        }
+
+        // if (rhs.size() > names.size()) {
+        //     return true;
+        // } else if (rhs.size() < names.size()) {
+        //     return false;
+        // }
+        // return false;
+
+        // return false;
+    }
+};
+
 struct PackageInfoFinder {
     unique_ptr<PackageInfoImpl> info = nullptr;
     vector<Export> exported;
@@ -755,7 +781,30 @@ struct PackageInfoFinder {
         if (exported.empty()) {
             return;
         }
-        fast_sort(exported, [](const auto &a, const auto &b) -> bool { return a.parts().size() < b.parts().size(); });
+        fast_sort(exported, [](const auto &a, const auto &b) -> bool { return core::packages::PackageInfo::lexCmp(a.parts(), b.parts()); });
+        fmt::print("** BEG\n");
+        for (auto &e : exported) {
+            fmt::print("{}\n", fmt::map_join(e.parts(), "::", [&](const auto &nr) { return nr.show(ctx); }));
+        }
+        // fmt::print("** END\n");
+        // for (auto shorter = exported.begin(); shorter != exported.end(); ++shorter) {
+        //     for (auto longer = shorter + 1; longer != exported.end(); ++longer) {
+        //         if (longer - exported.begin() <= shorter - exported.begin()) {
+        //             break;
+        //         }
+        //         if (std::equal(shorter->parts().begin(), shorter->parts().end(), longer->parts().begin()) &&
+        //             !allowedExportPrefix(ctx, *shorter, *longer)) {
+        //             if (auto e = ctx.beginError(longer->fqn.loc.offsets(), core::errors::Packager::ExportConflict)) {
+        //                 e.setHeader(
+        //                     "Cannot export `{}` because another exported name `{}` is a prefix of it",
+        //                     fmt::map_join(longer->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }),
+        //                     fmt::map_join(shorter->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }));
+        //                 e.addErrorLine(shorter->fqn.loc, "Prefix exported here");
+        //             }
+        //             break; // Only need to find the shortest conflicting export
+        //         }
+        //     }
+        // }
         // TODO(nroman) If this is too slow could probably be sped up with lexigraphic sort.
         for (auto longer = exported.begin() + 1; longer != exported.end(); longer++) {
             for (auto shorter = exported.begin(); shorter != longer; shorter++) {
