@@ -518,7 +518,7 @@ private:
     bool isInPackage(core::SymbolRef sym, core::SymbolRef original) {
         if (sym == core::Symbols::root() || sym == core::Symbols::PackageRegistry()) {
             // Symbol isn't part of a package. Check if it was defined in an RBI.
-            auto loc = sym.loc(gs);
+            auto loc = original.loc(gs);
             if (loc.exists() && loc.file().data(gs).isRBI() && !loc.file().data(gs).isPayload()) {
                 referencedRBIs.insert(loc.file());
             }
@@ -1046,7 +1046,7 @@ public:
 
             output.rbi = "# typed: true\n\n" + out.toString();
             output.rbiPackageDependencies = fmt::format(
-                "{{\"packageRefs\":{}, \"rbiRefs\":{}}}",
+                "{{\"packageRefs\":[{}], \"rbiRefs\":[{}]}}",
                 absl::StrJoin(referencedPackages.begin(), referencedPackages.end(), ",", QuoteStringNameFormatter(gs)),
                 absl::StrJoin(referencedRBIs.begin(), referencedRBIs.end(), ",", QuoteStringFileFormatter(gs)));
         }
