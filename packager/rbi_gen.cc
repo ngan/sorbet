@@ -1063,9 +1063,11 @@ public:
             auto rbiText = out.toString();
             if (!rbiText.empty()) {
                 output.testRBI = "# typed: true\n\n" + rbiText;
-                output.testRBIPackageDependencies =
-                    fmt::format("[{}]", absl::StrJoin(referencedPackages.begin(), referencedPackages.end(), ",",
-                                                      QuoteStringNameFormatter(gs)));
+                output.testRBIPackageDependencies = fmt::format(
+                    "{{\"packageRefs\":[{}], \"rbiRefs\":[{}]}}",
+                    absl::StrJoin(referencedPackages.begin(), referencedPackages.end(), ",",
+                                  QuoteStringNameFormatter(gs)),
+                    absl::StrJoin(referencedRBIs.begin(), referencedRBIs.end(), ",", QuoteStringFileFormatter(gs)));
             }
         }
 
