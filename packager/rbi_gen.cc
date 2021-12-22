@@ -987,9 +987,19 @@ private:
         auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
         // typed: false files have bad aliases. When this occurs, just emit a def instead.
         if (dealiasedMethod != method && dealiasedMethod != core::Symbols::Sorbet_Private_Static_badAliasMethodStub()) {
-            // alias_method
-            out.println("alias_method :{}, :{}", method.data(gs)->name.show(gs),
-                        dealiasedMethod.data(gs)->name.show(gs));
+            if (method.data(gs)->owner.data(gs)->isSingletonClass(gs)) {
+                out.println("class << self");
+                {
+                    Indent indent(out);
+                    out.println("alias_method :{}, :{}", method.data(gs)->name.show(gs),
+                                dealiasedMethod.data(gs)->name.show(gs));
+                }
+                out.println("end");
+            } else {
+                // alias_method
+                out.println("alias_method :{}, :{}", method.data(gs)->name.show(gs),
+                            dealiasedMethod.data(gs)->name.show(gs));
+            }
             return;
         }
 

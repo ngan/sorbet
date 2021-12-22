@@ -190,6 +190,15 @@ module RBIGen::Public
     alias_method :eql?, :==
     alias_method :bad_alias, :method_not_found # error: Can't make method alias
 
+    class << self
+      extend T::Sig
+      
+      sig {void}
+      def some_method; end
+
+      alias_method :some_method_alias, :some_method
+    end
+
     sig {params(other: BasicObject).returns(T::Boolean)}
     def ==(other)
       false

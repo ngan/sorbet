@@ -579,11 +579,12 @@ public:
             ENFORCE(skipPush == 0);
             return tree;
         }
-        auto *constantLit = &ast::cast_tree_nonnull<ast::UnresolvedConstantLit>(classDef.name);
         if (skipPush > 0) {
             skipPush--;
             return tree;
         }
+
+        auto *constantLit = &ast::cast_tree_nonnull<ast::UnresolvedConstantLit>(classDef.name);
         popConstantLit(constantLit);
         return tree;
     }

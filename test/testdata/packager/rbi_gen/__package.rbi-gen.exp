@@ -218,6 +218,11 @@ class RBIGen::Public::AliasMethod < Object
   def bad_alias(*arg0); end
   alias_method :eql?, :==
   extend T::Sig
+  sig {void}
+  def self.some_method; end
+  class << self
+    alias_method :some_method_alias, :some_method
+  end
 end
 class RBIGen::Public::AbstractClass < Object
   abstract!
