@@ -628,7 +628,16 @@ private:
         if (!src) {
             return false;
         }
-        return absl::StartsWith(*src, "prop ") || absl::StartsWith(*src, "const ");
+
+        auto firstTokenPos = src->find_first_of(" (");
+        if (firstTokenPos == string::npos) {
+            return false;
+        }
+
+        string_view firstToken = src->substr(0, firstTokenPos);
+        return firstToken == "prop" || firstToken == "const" || firstToken == "token_prop" ||
+               firstToken == "timestamped_token_prop" || firstToken == "created_prop" || firstToken == "updated_prop" ||
+               firstToken == "merchant_prop" || firstToken == "merchant_token_prop";
     }
 
     bool isFlatfileFieldMethod(core::MethodRef method) {
