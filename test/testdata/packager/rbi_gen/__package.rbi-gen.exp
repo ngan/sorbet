@@ -18,11 +18,14 @@ module RBIGen::Public::VariousMethods
   def returns_type_alias; end
   sig {void}
   private def sample_mod_fcn; end
+  sig {void}
+  private def some_mod_fcn; end
   extend T::Sig
   sig {void}
   private_class_method def self.kls_method; end
   sig {void}
   def self.sample_mod_fcn; end
+  module_function :some_mod_fcn
 end
 class RBIGen::Private::PrivateClassPulledInByPrivateMethod < Object
 end

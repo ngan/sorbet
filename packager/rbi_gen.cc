@@ -958,6 +958,12 @@ private:
             return;
         }
 
+        if (method.data(gs)->arguments.size() == 2 &&
+            absl::StartsWith(method.data(gs)->arguments[0].argumentName(gs), "module_function")) {
+            out.println("module_function :{}", method.data(gs)->name.show(gs));
+            return;
+        }
+
         // cerr << "Emitting " << method.show(gs) << "\n";
 
         if (method.data(gs)->hasSig()) {

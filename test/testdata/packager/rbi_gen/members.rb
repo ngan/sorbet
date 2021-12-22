@@ -234,6 +234,11 @@ module RBIGen::Public
     sig {void}
     module_function def sample_mod_fcn; end
 
+    sig {void}
+    def some_mod_fcn; end
+
+    module_function :some_mod_fcn # error: This function does not have a `sig`
+
     def dotdotdot(...); end # error: This function does not have a `sig`
   end
 
