@@ -188,6 +188,7 @@ module RBIGen::Public
     extend T::Sig
 
     alias_method :eql?, :==
+    alias_method :bad_alias, :method_not_found # error: Can't make method alias
 
     sig {params(other: BasicObject).returns(T::Boolean)}
     def ==(other)

@@ -985,7 +985,8 @@ private:
         }
 
         auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
-        if (dealiasedMethod != method) {
+        // typed: false files have bad aliases. When this occurs, just emit a def instead.
+        if (dealiasedMethod != method && dealiasedMethod != core::Symbols::Sorbet_Private_Static_badAliasMethodStub()) {
             // alias_method
             out.println("alias_method :{}, :{}", method.data(gs)->name.show(gs),
                         dealiasedMethod.data(gs)->name.show(gs));
@@ -994,8 +995,8 @@ private:
 
         // cerr << "Emitting " << method.show(gs) << "\n";
 
-        if (method.data(gs)->hasSig()) {
-            out.println(prettySigForMethod(method, nullptr, method.data(gs)->resultType, nullptr));
+        if (dealiasedMethod.data(gs)->hasSig()) {
+            out.println(prettySigForMethod(dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
         }
         if (fields.empty() || method.data(gs)->flags.isAbstract) {
             out.println(prettyDefForMethod(method) + "; end");
