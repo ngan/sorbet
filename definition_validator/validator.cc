@@ -464,6 +464,10 @@ void validateSealedAncestorHelper(core::Context ctx, const core::ClassOrModuleRe
         }
 
         auto klassFile = bestNonRBIFile(ctx, klass);
+        // HACK for RBI generator (see other comment)
+        if (klassFile.data(ctx).isRBI()) {
+            continue;
+        }
         if (absl::c_any_of(mixin.data(ctx)->sealedLocs(ctx),
                            [klassFile](auto loc) { return loc.file() == klassFile; })) {
             continue;
