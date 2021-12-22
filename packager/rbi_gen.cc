@@ -741,7 +741,7 @@ private:
                     }
                     case core::SymbolRef::Kind::FieldOrStaticField: {
                         auto field = member.asFieldRef();
-                        if (field.data(gs)->isField()) {
+                        if (field.data(gs)->flags.isField) {
                             pendingFields.emplace_back(field);
                         } else {
                             if (absl::StartsWith(field.data(gs)->name.show(gs), "@@")) {
@@ -837,7 +837,7 @@ private:
                         }
                         case core::SymbolRef::Kind::FieldOrStaticField: {
                             auto field = member.asFieldRef();
-                            if (field.data(gs)->isField()) {
+                            if (field.data(gs)->flags.isField) {
                                 emit(field);
                             } else {
                                 if (absl::StartsWith(field.data(gs)->name.show(gs), "@@")) {
@@ -920,7 +920,7 @@ private:
 
     void emit(core::FieldRef field, bool isCVar = false) {
         // cerr << "Emitting " << field.show(gs) << "\n";
-        if (field.data(gs)->isStaticField()) {
+        if (field.data(gs)->flags.isStaticField) {
             const auto &resultType = field.data(gs)->resultType;
             if (resultType != nullptr) {
                 if (core::isa_type<core::AliasType>(resultType)) {
@@ -940,7 +940,7 @@ private:
                 }
             }
 
-            if (field.data(gs)->isTypeAlias()) {
+            if (field.data(gs)->flags.isStaticFieldTypeAlias) {
                 out.println("{} = T.type_alias {{{}}}", field.show(gs), showType(resultType));
             } else if (isCVar) {
                 out.println("{} = {}", field.data(gs)->name.show(gs), typeDeclaration(resultType));
