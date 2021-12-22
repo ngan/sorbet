@@ -229,6 +229,9 @@ private:
         if (argName == "unless"sv) {
             argName = "unlessArg"sv;
         }
+        if (absl::EndsWith(argName, "?")) {
+            argName = argName.substr(0, argName.length() - 1);
+        }
         return argName;
     }
 

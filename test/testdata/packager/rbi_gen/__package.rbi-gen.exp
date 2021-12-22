@@ -147,6 +147,12 @@ class RBIGen::Public::Flatfile < Opus::Flatfiles::Record
     field :baz
     field :foo
   end
+  sig {returns(String)}
+  def deprecated?; end
+  sig {params(deprecated: String).returns(NilClass)}
+  def self.deprecated?(deprecated); end
+  sig {returns(String)}
+  def self.get_deprecated?; end
 end
 class RBIGen::Public::FinalClass < Object
   final!

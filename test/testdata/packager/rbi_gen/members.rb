@@ -4,6 +4,9 @@
 module ::Opus::Flatfiles
   class Record
     extend T::Sig
+
+    sig {params(name: T.untyped, type: T.untyped).void}
+    def self.dsl_required(name, type); end
     
     sig {params(blk: T.proc.void).void}
     def self.flatfile(&blk); end
@@ -326,6 +329,8 @@ module RBIGen::Public
   end
 
   class Flatfile < Opus::Flatfiles::Record
+    dsl_required :deprecated?, String
+
     flatfile do
       from   1..2, :foo
       pattern(/A-Za-z/, :bar)
