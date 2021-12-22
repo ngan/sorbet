@@ -537,9 +537,11 @@ private:
     bool isInPackage(core::SymbolRef sym, core::SymbolRef original) {
         if (sym == core::Symbols::root() || sym == core::Symbols::PackageRegistry()) {
             // Symbol isn't part of a package. Check if it was defined in an RBI.
-            auto loc = original.loc(gs);
-            if (loc.exists() && loc.file().data(gs).isRBI() && !loc.file().data(gs).isPayload()) {
-                referencedRBIs.insert(loc.file());
+            auto locs = original.locs(gs);
+            for (auto loc : locs) {
+                if (loc.exists() && loc.file().data(gs).isRBI() && !loc.file().data(gs).isPayload()) {
+                    referencedRBIs.insert(loc.file());
+                }
             }
             return false;
         }
