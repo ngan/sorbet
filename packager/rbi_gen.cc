@@ -188,6 +188,13 @@ private:
         // def_delegator :target, :method_on_target_name, :this_method_name
         // def_delegators :target, :method1_on_target_name, :method2_on_target_name, ...
 
+        bool onSingleton = method.data(gs)->owner.data(gs)->isSingletonClass(gs);
+        unique_ptr<Indent> indent = nullptr;
+        if (onSingleton) {
+            out.println("class << self");
+            indent = make_unique<Indent>(out);
+        }
+
         // We can emit the first two as-is. The third we can desugar into:
         // def_delegator :target, :this_method_name
         if (absl::StartsWith(argName, defDelegators)) {
@@ -206,6 +213,10 @@ private:
             Exception::raise("Invalid def_delegator!");
         } else {
             out.println(argName);
+        }
+        indent = nullptr;
+        if (onSingleton) {
+            out.println("end");
         }
         return true;
     }

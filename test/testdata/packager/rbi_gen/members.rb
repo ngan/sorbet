@@ -192,7 +192,7 @@ module RBIGen::Public
 
     class << self
       extend T::Sig
-      
+
       sig {void}
       def some_method; end
 
@@ -291,6 +291,15 @@ module RBIGen::Public
     def initialize
       @field = T.let("", String)
     end
+
+    @static_field = T.let(10, Integer)
+    class << self
+      extend Forwardable
+      
+      def_delegators :@static_field, :method1, :method2
+      def_delegator :@static_field, :method3
+    end
+
 
     def_delegator :@field, :length
     def_delegator :@field, :concat, :aliased_concat
