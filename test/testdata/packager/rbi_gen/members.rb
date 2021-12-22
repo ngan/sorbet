@@ -17,6 +17,16 @@ module ::Opus::Flatfiles
     sig {params(pattern: T.untyped, name: T.untyped).void}
     def self.from(pattern, name); end
   end
+
+  class MarkupLanguageNodeStruct
+    extend T::Sig
+    
+    sig {params(blk: T.proc.void).void}
+    def self.flatfile(&blk); end
+
+    sig {params(name: T.untyped).void}
+    def self.field(name); end
+  end
 end
 
 module RBIGen::Private
@@ -320,6 +330,12 @@ module RBIGen::Public
       from   1..2, :foo
       pattern(/A-Za-z/, :bar)
       field :baz
+    end
+  end
+
+  class XMLNode < Opus::Flatfiles::MarkupLanguageNodeStruct
+    flatfile do
+      field :boo
     end
   end
 end

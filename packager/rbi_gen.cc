@@ -150,6 +150,7 @@ private:
     const core::ClassOrModuleRef pkgTestNamespace;
     const UnorderedSet<core::ClassOrModuleRef> &pkgNamespaces;
     core::ClassOrModuleRef flatfileRecord;
+    core::ClassOrModuleRef flatfileXMLNode;
     UnorderedSet<core::SymbolRef> emittedSymbols;
     // package => blame, for debugging
     UnorderedMap<core::ClassOrModuleRef, core::SymbolRef> referencedPackages;
@@ -672,7 +673,7 @@ private:
         if (klass == core::Symbols::root() || !klass.exists()) {
             return false;
         }
-        if (klass == flatfileRecord) {
+        if (klass == flatfileRecord || klass == flatfileXMLNode) {
             return true;
         }
         return isFlatfile(klass.data(gs)->superClass());
@@ -1091,6 +1092,7 @@ public:
         const auto flatFiles = gs.lookupClassSymbol(core::Symbols::Opus(), gs.lookupNameConstant("Flatfiles"));
         if (flatFiles.exists()) {
             flatfileRecord = gs.lookupClassSymbol(flatFiles, gs.lookupNameConstant("Record"));
+            flatfileXMLNode = gs.lookupClassSymbol(flatFiles, gs.lookupNameConstant("MarkupLanguageNodeStruct"));
         }
     }
 

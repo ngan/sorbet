@@ -4,6 +4,11 @@
 RBIGen::DirectlyExported::MyString = String
 module RBIGen::Public
 end
+class RBIGen::Public::XMLNode < Opus::Flatfiles::MarkupLanguageNodeStruct
+  flatfile do
+    field :boo
+  end
+end
 module RBIGen::Public::VariousMethods
   sig {void}
   def initialize
