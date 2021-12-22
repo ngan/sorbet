@@ -120,6 +120,13 @@ class RBIGen::Public::HasInitializer < Object
   def initialize(a); end
   extend T::Sig
 end
+class RBIGen::Public::Flatfile < Opus::Flatfiles::Record
+  flatfile do
+    field :bar
+    field :baz
+    field :foo
+  end
+end
 class RBIGen::Public::FinalClass < Object
   final!
   sig(:final) {void}

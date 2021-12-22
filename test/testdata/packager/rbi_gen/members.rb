@@ -1,5 +1,24 @@
 # typed: strict
 
+# Cheating
+module ::Opus::Flatfiles
+  class Record
+    extend T::Sig
+    
+    sig {params(blk: T.proc.void).void}
+    def self.flatfile(&blk); end
+
+    sig {params(name: T.untyped).void}
+    def self.field(name); end
+
+    sig {params(pattern: T.untyped, name: T.untyped).void}
+    def self.pattern(pattern, name); end
+
+    sig {params(pattern: T.untyped, name: T.untyped).void}
+    def self.from(pattern, name); end
+  end
+end
+
 module RBIGen::Private
   class PrivateClass; end
   class PrivateClassPulledInByClassAlias; end
@@ -277,5 +296,13 @@ module RBIGen::Public
     end
 
     mixes_in_class_methods(ClassMethods)
+  end
+
+  class Flatfile < Opus::Flatfiles::Record
+    flatfile do
+      from   1..2, :foo
+      pattern(/A-Za-z/, :bar)
+      field :baz
+    end
   end
 end

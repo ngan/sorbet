@@ -149,6 +149,7 @@ private:
     const core::ClassOrModuleRef pkgNamespace;
     const core::ClassOrModuleRef pkgTestNamespace;
     const UnorderedSet<core::ClassOrModuleRef> &pkgNamespaces;
+    core::ClassOrModuleRef flatfileRecord;
     UnorderedSet<core::SymbolRef> emittedSymbols;
     // package => blame, for debugging
     UnorderedMap<core::ClassOrModuleRef, core::SymbolRef> referencedPackages;
@@ -630,6 +631,30 @@ private:
         return absl::StartsWith(*src, "prop ") || absl::StartsWith(*src, "const ");
     }
 
+    bool isFlatfileFieldMethod(core::MethodRef method) {
+        if (absl::EndsWith(method.data(gs)->name.shortName(gs), "=")) {
+            // If there is a prop= method, there will be a prop method.
+            return false;
+        }
+
+        auto src = method.data(gs)->loc().source(gs);
+        if (!src) {
+            return false;
+        }
+        return absl::StartsWith(*src, "field ") || absl::StartsWith(*src, "from ") ||
+               absl::StartsWith(*src, "pattern ") || absl::StartsWith(*src, "pattern(");
+    }
+
+    bool isFlatfile(core::ClassOrModuleRef klass) {
+        if (klass == core::Symbols::root() || !klass.exists()) {
+            return false;
+        }
+        if (klass == flatfileRecord) {
+            return true;
+        }
+        return isFlatfile(klass.data(gs)->superClass());
+    }
+
     void emit(core::ClassOrModuleRef klass) {
         if (!isInPackage(klass, klass) || !emittedSymbols.contains(klass)) {
             // We don't emit class definitions for items defined in other packages.
@@ -648,6 +673,7 @@ private:
 
         const bool isEnum = klass.data(gs)->superClass() == core::Symbols::T_Enum();
         const bool isStruct = klass.data(gs)->superClass() == core::Symbols::T_Struct();
+        const bool isFlatFile = this->isFlatfile(klass);
 
         // cerr << "Emitting " << klass.show(gs) << "\n";
         // Class definition line
@@ -782,6 +808,32 @@ private:
                     // Defaults are not semantically important on non-T-Struct props.
                     bool hasDefault = false;
                     emitProp(name, propMethod.data(gs)->resultType, isConst, hasDefault);
+                }
+            }
+
+            if (isFlatFile) {
+                // Need to check for flatfile fields and emit them specially.
+                vector<core::MethodRef> fieldMethods;
+                for (auto method : pendingMethods) {
+                    if (isFlatfileFieldMethod(method)) {
+                        fieldMethods.emplace_back(method);
+                    }
+                }
+
+                if (!fieldMethods.empty()) {
+                    out.println("flatfile do");
+                    {
+                        Indent indent(out);
+                        for (auto &fieldMethod : fieldMethods) {
+                            auto name = fieldMethod.data(gs)->name;
+                            bool isConst = true;
+                            // need the same logic for flatfile fields :shrug:
+                            removePropMethods(pendingMethods, name, isConst);
+                            // sorbet doesn't care about if it's field/pattern/etc; it just needs the name.
+                            out.println("field :{}", name.show(gs));
+                        }
+                    }
+                    out.println("end");
                 }
             }
 
@@ -1006,7 +1058,12 @@ public:
     RBIExporter(const core::GlobalState &gs, const core::packages::PackageInfo &pkg,
                 const UnorderedSet<core::ClassOrModuleRef> &pkgNamespaces)
         : gs(gs), pkg(pkg), pkgNamespace(lookupFQN(gs, pkg.fullName()).asClassOrModuleRef()),
-          pkgTestNamespace(getPkgTestNamespace(gs, pkg)), pkgNamespaces(pkgNamespaces) {}
+          pkgTestNamespace(getPkgTestNamespace(gs, pkg)), pkgNamespaces(pkgNamespaces) {
+        const auto flatFiles = gs.lookupClassSymbol(core::Symbols::Opus(), gs.lookupNameConstant("Flatfiles"));
+        if (flatFiles.exists()) {
+            flatfileRecord = gs.lookupClassSymbol(flatFiles, gs.lookupNameConstant("Record"));
+        }
+    }
 
     RBIGenerator::RBIOutput emit() {
         RBIGenerator::RBIOutput output;
