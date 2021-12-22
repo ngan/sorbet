@@ -206,6 +206,10 @@ private:
                     auto stripped = absl::StripAsciiWhitespace(component);
                     if (!stripped.empty()) {
                         out.println("def_delegator {}, :{}", stripped, method.data(gs)->name.show(gs));
+                        if (onSingleton) {
+                            indent = nullptr;
+                            out.println("end");
+                        }
                         return true;
                     }
                 }
@@ -214,8 +218,8 @@ private:
         } else {
             out.println(argName);
         }
-        indent = nullptr;
         if (onSingleton) {
+            indent = nullptr;
             out.println("end");
         }
         return true;

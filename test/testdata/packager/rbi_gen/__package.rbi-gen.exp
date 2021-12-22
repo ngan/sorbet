@@ -193,8 +193,10 @@ module RBIGen::Public::DefDelegator
   @static_field = T.let(T.unsafe(nil), Integer)
   class << self
     def_delegator :@static_field, :method1
+  end
   class << self
     def_delegator :@static_field, :method2
+  end
   class << self
     def_delegator :@static_field, :method3
   end
