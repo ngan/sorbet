@@ -5,7 +5,16 @@ RBIGen::DirectlyExported::MyString = String
 module RBIGen::Public
 end
 module RBIGen::Public::VariousMethods
+  sig {void}
+  def initialize
+    @if = T.let(T.unsafe(nil), Integer)
+    @unless = T.let(T.unsafe(nil), String)
+  end
   def dotdotdot(...); end
+  sig {returns(Integer)}
+  def if; end
+  sig {params(ifArg: Integer).returns(Integer)}
+  def if=(ifArg); end
   sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
   private def my_method(a); end
   sig {returns(T.any(String, [T.deprecated_enum([:D]), Integer], Integer))}
@@ -20,6 +29,10 @@ module RBIGen::Public::VariousMethods
   private def sample_mod_fcn; end
   sig {void}
   private def some_mod_fcn; end
+  sig {returns(String)}
+  def unless; end
+  sig {params(unlessArg: String).returns(String)}
+  def unless=(unlessArg); end
   extend T::Sig
   sig {void}
   private_class_method def self.kls_method; end

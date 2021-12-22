@@ -176,7 +176,7 @@ private:
 
         constexpr string_view defDelegator = "def_delegator"sv;
         constexpr string_view defDelegators = "def_delegators"sv;
-        auto argName = args[0].argumentName(gs);
+        string_view argName = args[0].argumentName(gs);
         if (!absl::StartsWith(argName, defDelegator)) {
             return false;
         }
@@ -215,6 +215,20 @@ private:
         }
         enqueueSymbolsInType(type);
         return type.show(gs);
+    }
+
+    // Rewrites ruby keywords to non-keywords.
+    string_view safeArgumentName(const core::ArgInfo &arg) {
+        auto argName = arg.argumentName(gs);
+        // support attr_accessor :if, :unless; the rewriter pass
+        // synthesizes args with those names which are keywords.
+        if (argName == "if"sv) {
+            argName = "ifArg"sv;
+        }
+        if (argName == "unless"sv) {
+            argName = "unlessArg"sv;
+        }
+        return argName;
     }
 
     string prettySigForMethod(core::MethodRef method, const core::TypePtr &receiver, core::TypePtr retType,
@@ -256,7 +270,7 @@ private:
             // Don't display synthetic arguments (like blk).
             if (!argSym.isSyntheticBlockArgument()) {
                 auto argType = getResultType(gs, argSym.type, method, receiver, constraint);
-                typeAndArgNames.emplace_back(absl::StrCat(argSym.argumentName(gs), ": ", showType(argType)));
+                typeAndArgNames.emplace_back(absl::StrCat(safeArgumentName(argSym), ": ", showType(argType)));
             }
         }
 
@@ -332,7 +346,7 @@ private:
 
             string prefix = "";
             string suffix = "";
-            auto argName = argSym.argumentName(gs);
+            auto argName = safeArgumentName(argSym);
             if (argName == "...") {
                 prettyArgs.emplace_back(argName);
                 // The remaining arguments are synthetic (<fwd-arg>, etc).

@@ -202,6 +202,18 @@ module RBIGen::Public
 
     MyString = T.type_alias {String}
 
+    sig {returns(Integer)}
+    attr_accessor :if
+
+    sig {returns(String)}
+    attr_accessor :unless
+
+    sig {void}
+    def initialize
+      @if = T.let(10, Integer)
+      @unless = T.let("", String)
+    end
+
     sig {params(a: RBIGen::Private::PrivateClassPulledInByPrivateMethod).void}
     private def my_method(a); end
 
