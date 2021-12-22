@@ -984,11 +984,18 @@ private:
             return;
         }
 
+        auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
+        if (dealiasedMethod != method) {
+            // alias_method
+            out.println("alias_method :{}, :{}", method.data(gs)->name.show(gs),
+                        dealiasedMethod.data(gs)->name.show(gs));
+            return;
+        }
+
         // cerr << "Emitting " << method.show(gs) << "\n";
 
         if (method.data(gs)->hasSig()) {
-            auto dealiasedMethod = method.data(gs)->dealiasMethod(gs);
-            out.println(prettySigForMethod(dealiasedMethod, nullptr, dealiasedMethod.data(gs)->resultType, nullptr));
+            out.println(prettySigForMethod(method, nullptr, method.data(gs)->resultType, nullptr));
         }
         if (fields.empty() || method.data(gs)->flags.isAbstract) {
             out.println(prettyDefForMethod(method) + "; end");

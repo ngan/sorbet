@@ -215,8 +215,7 @@ end
 class RBIGen::Public::AliasMethod < Object
   sig {params(other: BasicObject).returns(T::Boolean)}
   def ==(other); end
-  sig {params(other: BasicObject).returns(T::Boolean)}
-  def eql?(other); end
+  alias_method :eql?, :==
   extend T::Sig
 end
 class RBIGen::Public::AbstractClass < Object
