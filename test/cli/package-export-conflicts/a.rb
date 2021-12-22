@@ -5,7 +5,4 @@ module MyPackage
     class B; end
     module C; end
   end
-
-  module X::Y; end
-  module X::Z; end
 end

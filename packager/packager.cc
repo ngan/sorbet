@@ -616,31 +616,43 @@ private:
     }
 };
 
-class Next final {
-public:
-
+// For a given vector of NameRefs, this represents the "next" vector that does not begin with its
+// prefix (without actually constructing it). Consider the following sorted names:
+//
+// [A B]
+// [A B C]
+// [A B D E]
+//    <<<< Position of LexNext([A B]) roughly equivalent to [A B <Infinity>]
+// [X Y]
+// [X Y Z]
+class LexNext final {
     const vector<core::NameRef> &names;
-    Next(vector<core::NameRef> &names) : names(names) {}
 
-    bool operator<(const vector<core::NameRef> &rhs) {
-        if (names.empty()) {
-            return true;
+public:
+    LexNext(const vector<core::NameRef> &names) : names(names) {}
+
+    bool operator<(const vector<core::NameRef> &rhs) const {
+        auto lhsIt = names.begin();
+        auto rhsIt = rhs.begin();
+        // Lexicographic comparison:
+        for (; lhsIt <= names.end() && rhsIt != rhs.end(); ++lhsIt, ++rhsIt) {
+            // Treat this.names.end() as if it were the max value.
+            if (lhsIt == names.end()) {
+                return false;
+            }
+            if (lhsIt->rawId() < rhsIt->rawId()) {
+                return true;
+            } else if (rhsIt->rawId() < lhsIt->rawId()) {
+                return false;
+            }
         }
-        auto size = names.size() - 1;
-        if (std::equal(names.begin(), names.begin() + size, rhs.begin(), rhs.begin() + size)) {
-            return true;
-        }
-
-        // if (rhs.size() > names.size()) {
-        //     return true;
-        // } else if (rhs.size() < names.size()) {
-        //     return false;
-        // }
-        // return false;
-
-        // return false;
+        return (lhsIt == names.end()) && (rhsIt != rhs.end());
     }
 };
+
+bool operator<(const Export &e, const LexNext &next) {
+    return !(next < e.parts());
+}
 
 struct PackageInfoFinder {
     unique_ptr<PackageInfoImpl> info = nullptr;
@@ -781,45 +793,36 @@ struct PackageInfoFinder {
         if (exported.empty()) {
             return;
         }
-        fast_sort(exported, [](const auto &a, const auto &b) -> bool { return core::packages::PackageInfo::lexCmp(a.parts(), b.parts()); });
+        fast_sort(exported, [](const auto &a, const auto &b) -> bool {
+            return core::packages::PackageInfo::lexCmp(a.parts(), b.parts());
+        });
+        /*
         fmt::print("** BEG\n");
         for (auto &e : exported) {
             fmt::print("{}\n", fmt::map_join(e.parts(), "::", [&](const auto &nr) { return nr.show(ctx); }));
+            LexNext lexNext(e.parts());
+            auto lb = lower_bound(exported.begin(), exported.end(), lexNext);
+            if (lb == exported.end()) {
+                fmt::print("    END\n");
+            } else {
+                fmt::print("    {}\n", fmt::map_join(lb->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }));
+            }
         }
-        // fmt::print("** END\n");
-        // for (auto shorter = exported.begin(); shorter != exported.end(); ++shorter) {
-        //     for (auto longer = shorter + 1; longer != exported.end(); ++longer) {
-        //         if (longer - exported.begin() <= shorter - exported.begin()) {
-        //             break;
-        //         }
-        //         if (std::equal(shorter->parts().begin(), shorter->parts().end(), longer->parts().begin()) &&
-        //             !allowedExportPrefix(ctx, *shorter, *longer)) {
-        //             if (auto e = ctx.beginError(longer->fqn.loc.offsets(), core::errors::Packager::ExportConflict)) {
-        //                 e.setHeader(
-        //                     "Cannot export `{}` because another exported name `{}` is a prefix of it",
-        //                     fmt::map_join(longer->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }),
-        //                     fmt::map_join(shorter->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }));
-        //                 e.addErrorLine(shorter->fqn.loc, "Prefix exported here");
-        //             }
-        //             break; // Only need to find the shortest conflicting export
-        //         }
-        //     }
-        // }
-        // TODO(nroman) If this is too slow could probably be sped up with lexigraphic sort.
-        for (auto longer = exported.begin() + 1; longer != exported.end(); longer++) {
-            for (auto shorter = exported.begin(); shorter != longer; shorter++) {
-                if (std::equal(shorter->parts().begin(), shorter->parts().end(), longer->parts().begin()) &&
-                    !allowedExportPrefix(ctx, *shorter, *longer)) {
+        */
+        for (auto it = exported.begin(); it != exported.end();) {
+            LexNext upperBound(it->parts());
+            auto longer = it + 1;
+            for (; longer != exported.end() && *longer < upperBound; ++longer) {
+                if (!allowedExportPrefix(ctx, *it, *longer)) {
                     if (auto e = ctx.beginError(longer->fqn.loc.offsets(), core::errors::Packager::ExportConflict)) {
-                        e.setHeader(
-                            "Cannot export `{}` because another exported name `{}` is a prefix of it",
-                            fmt::map_join(longer->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }),
-                            fmt::map_join(shorter->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }));
-                        e.addErrorLine(shorter->fqn.loc, "Prefix exported here");
+                        e.setHeader("Cannot export `{}` because another exported name `{}` is a prefix of it",
+                                    fmt::map_join(longer->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }),
+                                    fmt::map_join(it->parts(), "::", [&](const auto &nr) { return nr.show(ctx); }));
+                        e.addErrorLine(it->fqn.loc, "Prefix exported here");
                     }
-                    break; // Only need to find the shortest conflicting export
                 }
             }
+            it = longer;
         }
 
         ENFORCE(info->exports.empty());
