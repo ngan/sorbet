@@ -288,6 +288,7 @@ module RBIGen::Public
   end
 
   MaybeString = T.type_alias {T.nilable(String)}
+  ShapeType = T.type_alias{{:$str => String}}
   
   class AttachedClassType
     extend T::Sig

@@ -132,7 +132,8 @@ string ShapeType::show(const GlobalState &gs) const {
         auto keyLiteral = cast_type_nonnull<LiteralType>(key);
         auto underlying = keyLiteral.underlying(gs);
         ClassOrModuleRef undSymbol = cast_type_nonnull<ClassType>(underlying).symbol;
-        if (undSymbol == Symbols::Symbol()) {
+        // properties beginning with $ need to be printed as :$prop => type.
+        if (undSymbol == Symbols::Symbol() && !absl::StartsWith(keyLiteral.asName(gs).shortName(gs), "$")) {
             fmt::format_to(std::back_inserter(buf), "{}: {}", cast_type_nonnull<LiteralType>(key).asName(gs).show(gs),
                            (*valueIterator).show(gs));
         } else {

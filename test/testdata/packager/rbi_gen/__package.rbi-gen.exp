@@ -58,6 +58,7 @@ class RBIGen::Public::StructWithInitializer < T::Struct
   end
   extend T::Sig
 end
+RBIGen::Public::ShapeType = T.type_alias {{:$str => String}}
 class RBIGen::Public::SealedClass < Object
   sealed!
   extend T::Helpers
