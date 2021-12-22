@@ -54,11 +54,11 @@ string LiteralType::toStringWithTabs(const GlobalState &gs, int tabs) const {
 
 string LiteralType::show(const GlobalState &gs) const {
     // RBI generator: Users type the value, not `String("value")`.
-    if (literalKind == LiteralTypeKind::Symbol) {
-        // HACK: Restore T.deprecated_enum :|
-        return fmt::format("T.deprecated_enum([{}])", showValue(gs));
-    }
-    return showValue(gs);
+    // if (literalKind == LiteralTypeKind::Symbol) {
+    // HACK: Restore T.deprecated_enum :|
+    return fmt::format("T.deprecated_enum([{}])", showValue(gs));
+    //}
+    // return showValue(gs);
     // return fmt::format("{}({})", this->underlying(gs).show(gs), showValue(gs));
 }
 

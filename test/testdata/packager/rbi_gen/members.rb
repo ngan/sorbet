@@ -253,6 +253,11 @@ module RBIGen::Public
       "A"
     end
 
+    sig {returns(T.deprecated_enum(["hello"]))}
+    def dep_enum
+      T.let(nil, T.untyped)
+    end
+
     sig {void}
     private_class_method def self.kls_method; end
 

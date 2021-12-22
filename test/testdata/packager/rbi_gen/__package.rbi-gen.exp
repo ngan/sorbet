@@ -15,6 +15,8 @@ module RBIGen::Public::VariousMethods
     @if = T.let(T.unsafe(nil), Integer)
     @unless = T.let(T.unsafe(nil), String)
   end
+  sig {returns(T.deprecated_enum(["hello"]))}
+  def dep_enum; end
   def dotdotdot(...); end
   sig {returns(Integer)}
   def if; end
